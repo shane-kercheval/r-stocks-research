@@ -1,0 +1,322 @@
+---
+title: "Stocks Research"
+author: "Shane Kercheval"
+date: "Jan 21, 2017"
+output:
+  md_document:
+    variant: markdown_github
+    toc: true
+    toc_depth: 2
+---
+
+```{r setup, echo=FALSE, results='hide', message=FALSE, warning=FALSE}
+source('~/r-tools/tools.R', chdir=TRUE)
+source('./r_stocks_helpers.R', chdir=TRUE)
+options(scipen=999) # non-scientific notation
+options(width=180)
+library(tidyverse)
+library(knitr)
+#clean_cache()
+
+opts_chunk$set(out.width='750px', dpi=200)
+
+pull_data <- FALSE
+```
+
+# Purpose
+
+> The main goal of this project is to work through a real-world example of **gathering**, **cleaning**, and **exploring** data, and using that data along with **machine learning** techniques to predict stock price gains and losses.
+> 
+> And more specifically, to compare those gains/losses against the market as a whole, in order to see if we can consistently beat the market with a portfolio of select stocks, based primarily on the quarterly or annual `financial information` of those stocks.
+
+- secondary goal include:
+	- having a *custom* sample project to implement new data analysis and machine learning techniques that I've learned.
+		- a financial/stock project seemed reasonable since it would contain data that I can use for basic data analysis, prediction, and time series.
+		- consequently, this project may contain sections where a particular analysis technique is redundant given previous data analysis techniques already applied in the project, but is included for learning purposes.
+
+# Preparing Stock Symbol Information
+
+- stock symbols found at [Nasdaq.com](http://www.nasdaq.com/screening/company-list.aspx)
+- stock information downloaded using [quantmod](https://cran.r-project.org/web/packages/quantmod/quantmod.pdf)
+
+```{r stocks, message=FALSE, warning=FALSE, include=FALSE}
+#######################################################################################################################################
+# load and process stock symbols to download
+#######################################################################################################################################
+df_nasdaq_symbols <- read.csv('./data/companylist_nasdaq.csv', stringsAsFactors = FALSE) %>%
+	filter(!grepl('_', symbol, fixed=TRUE), !grepl('.', symbol, fixed=TRUE), !grepl('^', symbol, fixed=TRUE))
+df_nyse_symbols <- read.csv('./data/companylist_nyse.csv') %>%
+	filter(!grepl('_', symbol, fixed=TRUE), !grepl('.', symbol, fixed=TRUE), !grepl('^', symbol, fixed=TRUE))
+df_amex_symbols <- read.csv('./data/companylist_amex.csv') %>%
+	filter(!grepl('_', symbol, fixed=TRUE), !grepl('.', symbol, fixed=TRUE), !grepl('^', symbol, fixed=TRUE))
+
+# nasdaq requires extra processing because they don't have symbols for duplicate stock, but they have symbols like `BLVD`, `BLVDU`, `BLVDW` which all represent the same company, so we will always(?) want the shorter `BLVD`
+df_nasdaq_symbols <- df_nasdaq_symbols %>%
+						dplyr::select(symbol, name) %>%
+						dplyr::group_by(name) %>%
+						dplyr::summarise(symbol = min(symbol)) # group by company name and then grab the min (i.e. shortest in this case) symbol
+
+all_symbols <- c(df_nasdaq_symbols$symbol, as.character(df_nyse_symbols$symbol), as.character(df_amex_symbols$symbol))
+all_symbols <- sort(unique(str_trim(all_symbols))) # just in case we have duplciates
+
+#######################################################################################################################################
+# the index we will be comparing against (and trying to beat) is the iShares MSCI ACWI (ACWI) https://finance.yahoo.com/quote/ACWI?p=ACWI
+#######################################################################################################################################
+acwi_closing <- get_prices('ACWI') #quarterly_mean = mean(acwi_closing$perc_change_90, na.rm = TRUE) # our mean is slightly thrown off since we add in additional numbers for weekends/holidays #yearly_return = (1+quarterly_mean)^4 - 1
+```
+
+## Stock Symbol Datasets
+
+These stock symbols will be used to download the financials using `quantmod`.
+
+```{r show_symbols}
+head(df_nasdaq_symbols)
+head(df_nyse_symbols)
+head(df_amex_symbols)
+```
+
+## All Country World Index (ACWI) Closing Prices
+
+We will use the `All Country World Index` (`ACWI`) [closing prices](https://finance.yahoo.com/quote/ACWI?p=ACWI) to compare our stocks against (and trying to beat) with machine learning predictions.
+
+According to [Investipedia](http://www.investopedia.com/terms/m/msci-acwi.asp), the ACWI is:
+
+> a market capitalization weighted index designed to provide a broad measure of equity-market performance throughout the world. The MSCI ACWI is maintained by Morgan Stanley Capital International, and is comprised of stocks from both developed and emerging markets.
+
+```{r show_acwi}
+head(acwi_closing)
+tail(acwi_closing)
+```
+
+# Downloading & Cleaning Stock Financial Data via `quantmod`
+
+- downloads stock financials statements using `quantmod` library, saves them into partitions that contain up to 100 stocks per partition (some stocks will not be found)
+- converts format of data returned by `quantmod` from various lists of financial statements to a single dataframes
+- changes column names into valid and consistent values (e.g. removes punctuation)
+- calculates various fields financial ratios and formats data so that rows (i.e. years) have that year's data as well as specific information for the following year in order to use those fields as target variables to be predicted (such as net profit margin, next year's stock prices, etc.)
+	- removes stocks that are missing a certain threshold of information. 
+
+```{r downloading_stocks, message=FALSE, warning=FALSE, include=FALSE}
+#######################################################################################################################################
+# download, filter, and save 100 stocks at a time to disk.
+#######################################################################################################################################
+partitions <- list(1:100, 101:200, 201:300, 301:400, 401:500, 501:600, 601:700, 701:800, 801:900, 901:1000, 1001:1100, 1101:1200, 1201:1300, 1301:1400, 1401:1500, 1501:1600, 1601:1700, 1701:1800, 1801:1900, 1901:2000, 2001:2100, 2101:2200, 2201:2300, 2301:2400, 2401:2500, 2501:2600, 2601:2700, 2701:2800, 2801:2900, 2901:3000, 3001:3100, 3101:3200, 3201:3300, 3301:3400, 3401:3500, 3501:3600, 3601:3700, 3701:3800, 3801:3900, 3901:4000, 4001:4100, 4101:4200, 4201:4300, 4301:4400, 4401:4500, 4501:4600, 4601:4700, 4701:4800, 4801:4900, 4901:5000, 5001:5100, 5101:5200, 5201:5300, 5301:5400, 5401:5500, 5501:5600, 5601:5700, 5701:5800, 5801: length(all_symbols))#5900, 5901:6000, 6001:6100, 6101:6200, 6201:6300, 6301:6400, 6401:6500, 6501:6600, 6601:6700, 6701:6800, 6801:6900, 6901:7000, 7001:7100, 7101:7200, 7201:7300, 7301:7400, 7401:7500, 7501:7600, 7601:7700, 7701:7800, 7801:7900, 7901:8000, 8001:8100, 8101:8200, 8201:8300, 8301:8400, 8401:8500, 8501:8600, 8601:8700, 8701:8800, 8801:8900, 8901:9000, 9001:9100, 9101:9200, 9201:9300, 9301:9400, 9401:9500, 9501:9600, 9601:9700, 9701:9800, 9801:9900, 9901:10000, 10001:10100, 10101:10200, 10201:10300, 10301:10400, 10401:10500, 10501:10600, 10601:10700, 10701:10800, 10801:10900, 10901:11000, 11001:11100, 11101:11200, 11201:11300, 11301:11400, 11401:11500, 11501:11600, 11601:11700, 11701:11800, 11801:11900, 11901:12000, 12001:12100, 12101:12200, 12201:12300, 12301:12400, 12401:12500, 12501:12600, 12601:12700, 12701:12800, 12801:12900, 12901:13000, 13001:13100, 13101:13200, 13201:13300, 13301:13400, 13401:13500, 13501:13600, 13601:13700, 13701:13800, 13801:13900, 13901:14000, 14001:14100, 14101:14200, 14201:14300, 14301:14400, 14401:14500, 14501:14600, 14601:14700, 14701:14800, 14801:14900, 14901:15000, 15001:15100, 15101:15200, 15201:15300, 15301:15400, 15401:15500, 15501:15600, 15601:15700, 15701:15800, 15801:15900, 15901:16000, 16001:16100, 16101:16200, 16201:16300, 16301:16400, 16401:16500, 16501:16600, 16601:16700, 16701:16800, 16801:16900, 16901:17000, 17001:17059)
+if(pull_data)
+{
+	download_save_data(partitions = partitions, all_symbols = all_symbols, acwi_closing = acwi_closing)
+}
+number_of_partitions <- length(partitions)
+financial_column_names <- readRDS(file = './Data/financial_column_names.RDS') # saveRDS(colnames(final_dataset), file = './data/financial_column_names.RDS')
+df_stocks_raw <- load_raw_stocks(number_of_partitions = number_of_partitions, financial_column_names = financial_column_names)
+```
+
+```{r clean_add_ratios, message=FALSE, warning=FALSE, include=FALSE}
+df_stocks_full = stock_financials_clean(df_stocks_raw)
+df_stocks_full = stock_financials_ratios(df_stocks_full)
+```
+
+## Column Names:
+
+```{r column_names, comment=NA}
+column_names = colnames(df_stocks_full)
+kable(data_frame(num=(1:length(column_names)), colname_names=column_names))
+```
+
+## Data Summary:
+
+> **NOTE**: all numbers, regardless of source (yahoo/google), look to be in `millions`. I have confirmed over multiple stocks/sources (but this can/should be further confirmed).
+
+```{r summmary, comment=NA}
+summary(df_stocks_full)
+```
+
+# Exploring Data
+
+## Collinearity
+
+```{r correlations}
+kable(get_correlations(df_stocks_full, corr_threshold = 0.7, p_value_threshold = 0.2))
+```
+
+> The high correlations among absolute data (as opposed to ratios) suggests that using ratios might yield better or more valid results in models where multi-collinearity causes problems.
+>
+> Rather than removing all of these columns, I will keep them in for now (with the exception of Revenue which will be removed (TotalRevenue will remain)), and extract the columns I want to work with for particular models.
+
+
+```{r remove_collinearity, echo=FALSE}
+df_stocks_full = df_stocks_full %>% select(-Revenue) # Revenue is 100% correlated to TotalRevenue
+```
+
+---------------------------------------------------------------------------------------------------------------------------------------
+
+# Sandbox / TODO
+
+
+```{r sandbox}
+x = df_stocks_full %>% select(-date, -symbol, -perc_change_stock_1year, -contains('ratioh_')) # get rid of `ratioh` because we only want numeric columns
+all(complete.cases(x))
+y = df_stocks_full %>% select(perc_change_stock_1year)
+all(complete.cases(y))
+correlations_with_perc_change <- cor(x, y=y, use='complete.obs')
+temp = as.data.frame(correlations_with_perc_change) %>% mutate(variable=rownames(correlations_with_perc_change), c_rank = dense_rank(desc(perc_change_stock_1year))) %>% arrange(c_rank) %>% select(variable, perc_change_stock_1year, c_rank)
+
+
+ggplot(data = df_stocks_full, mapping = aes(x = TotalRevenue, y = perc_change_stock_1year)) +
+	geom_point(alpha=0.2) # alpha avoids overfiting
+
+# makes sense that revenue isn't necessarily correlated with perc_change_stock_1year becuase revenue doesn't guarantee success or profit
+
+ggplot(data = df_stocks_full) +
+	geom_hex(mapping = aes(x = TotalRevenue, y = perc_change_stock_1year))
+
+ggplot(data = df_stocks_full, aes(perc_change_stock_1year)) +
+	geom_freqpoly(bins = 15)
+
+# perhaps clustering data will help, since 
+
+
+ggplot(data = df_stocks_full, mapping = aes(x = net_profit_margin, y = perc_change_stock_1year)) +
+	geom_point(alpha=0.2) # alpha avoids overfiting
+
+# makes sense that revenue isn't necessarily correlated with perc_change_stock_1year becuase revenue doesn't guarantee success or profit
+
+ggplot(data = df_stocks_full) +
+	geom_hex(mapping = aes(x = net_profit_margin, y = perc_change_stock_1year))
+
+ggplot(data = df_stocks_full, aes(net_profit_margin)) +
+	geom_freqpoly(bins = 15)
+
+# interesting that net profit margin doesn't appear to have any significance in determining perc_change_stock_1year. I would have expected a somewhat linear relationship
+
+
+# temp = df_stocks_full %>% filter(net_profit_margin >= 0.5)
+# # net profit margin is right skewed, there are `r nrow(temp)` stocks that have net profit margin >= 50%, although after review stock information, they look like legitimate values/symbols.
+
+
+# library(minerva)
+# minerva_results <- mine(x, y=y$perc_change_stock_1year, alpha=0.7)
+# res <- data.frame(MIC = c(minerva_results$MIC))
+# rownames(res) <- rownames(minerva_results$MIC)
+# res$MIC_Rank <- nrow(res) - rank(res$MIC, ties.method="first") + 1
+# res$Pearson <- P
+# res$Pearson_Rank <- nrow(res) - rank(abs(res$Pearson), ties.method="first") + 1
+# res <- res[order(res$MIC_Rank),]
+# res
+# res$variable = rownames(res)
+# asdf = merge(res, temp)
+# rows_original = nrow(x) # 7835
+
+
+
+# ##########
+# 	summary(df_stocks_full$TotalRevenue)
+	
+# 	x = df_stocks_full %>% select(-date, -symbol, -contains('ratioh_')) # get rid of `ratioh` because we only want numeric columns
+# 	column_names = colnames(x)
+# 	#walk(column_names[1], ~ ggplot(x, aes(x= x[, column_names], y = y$perc_change_stock_1year)))
+# 	column_data = map(column_names, ~ x[, .] )
+# 	create_percentile_matrix(column_data, row_names = column_names)
+#     walk(column_names, ~  {
+#         plotgg = ggplot(x, aes(x=x[, .], y=perc_change_stock_1year, col = TotalRevenue > 5000)) + geom_point() + labs(x = .) # 5000 == 5B
+#         ggsave(filename = paste0('./data/perc_change_plots/', ., '.png'), plot=plotgg)
+#     })
+# #NOTE was going to see if there was a pattern between 'Large' and 'Small' companies (based on > 5B), in which case I would bucket into different groups and perhaps learning algorithms, but doesn't seem to be
+
+
+# 	outlier_indexes = map(column_names, ~ which_outliers(x[, .]))
+# 	outlier_indexes = sort(unique(unlist(outlier_indexes)))
+# 	length(outlier_indexes)
+
+
+# 	# Total Revenue over 600B seems off
+# 	create_percentile_matrix(list(temp_x$TotalRevenue, temp_x$cs_net_income, y$perc_change_stock_1year), row_names = c('revenue', 'net income', 'perc_change_stock_1year'))
+# 	ggplot(temp_x, aes(x=cs_net_income, y=perc_change_stock_1year)) + geom_point()
+
+
+# 	boxplot(dat$TotalRevenue)
+# 	summary(dat$perc_change_stock_1year)
+
+
+#TODO: NOTE: WHEN SEPERATING TRAINING VS TEST DATA, SEPRATE BASED ON YEAR (TRAINING BEFORE 2015-01-02, AND TEST AFTER 2015) We DON'T WANT TO ANALYZE IN THE SAME YEAR WE TESTED BECAUSE WE WON'T DO THIS IN REAL LIFE, OR WHEN WE SIMULATE FUTURE GAINS VIA QUANTMOD
+
+
+
+# 	#######################################################
+# 	# saved processed data to disk
+# 	#######################################################
+# 	log.NOTE(h2('Post Processing Summary'))
+# 	log.NOTE(codebc(summary(df_stocks_full))) # before we change, let's pring out summary of data
+# 	log.WARNING('WARNING: IN THE ABOVE SUMMARY, CHECK FOR `NA`s AND `Inf`s (NAs in perc_change_stock_1year is normal for quarterly data, will filter out later)')
+# 	stock_file_name = './data/df_stocks_full.RDS'
+# 	log.INFO(paste0('saving stock financial data to `', stock_file_name, '`'))
+# 	saveRDS(df_stocks_full, file=stock_file_name)
+
+# 	#######################################################
+# 	# create dataset for trends
+# 	#######################################################
+# 	log.INFO('building trend dataset...')
+# 	unique_cleaned_stocks = unique(df_stocks_full$symbol)
+# 	df_stocks_trend = build_stock_trend_dataset(df_stocks_full=df_stocks_full, unique_cleaned_stocks=unique_cleaned_stocks)
+# 	stock_file_name = './data/df_stocks_trend.RDS'
+# 	log.INFO(paste0('saving stock trend data to `', stock_file_name, '`'))
+# 	saveRDS(df_stocks_trend, file=stock_file_name)
+
+# 	log.NOTE(paste0('`', nrow(df_stocks_trend), '` rows in `df_stocks_trend` dataset'))
+# 	log.NOTE(paste0('`', length(unique(df_stocks_trend$symbol)), '` unique stocks in `df_stocks_trend` dataset (should be the same as the previous number'))
+# 	log.NOTE(h2('Stock-Trend-Dataset Summary'))
+# 	log.NOTE(codebc(summary(df_stocks_trend))) # before we change, let's pring out summary of data
+# 	log.NOTE(h2('Stock-Trend-Dataset Date Summary'))
+# 	summary(df_stocks_trend$date)
+
+# 	#######################################################
+# 	# Let's see what the distributions of the target variables are like (i.e. of the stocks we are analyzing, how many outperform awci comparison index, how many underperform)
+# 	# since the comparison index is supposed to track the overall world stock market, and if the stocks we are analyzing are representative of the overall world market, we would expect a normal distirbution
+# 	#######################################################
+# 	log.NOTE(table_matrix(a_matrix=create_percentile_matrix(list_of_datasets=list(df_stocks_full$perc_change_stock_1year, df_stocks_trend$perc_change_stock_1year),
+# 								row_names=c('df_stocks_full$perc_change_stock_1year', 'df_stocks_trend$perc_change_stock_1year'),
+# 								percentiles=c(0, 0.025, 0.05, 0.10, 0.25, 0.40, 0.50, 0.60, 0.75, 0.90, 0.95, 0.975, 1)),
+# 						title='Distribution of Target Variable', row_header='dataset & target variable', title_format=h2))
+# 	log.NOTE(bold('The target variable shows the stock performance compared with the awci comparison index. The distribution appears to be normal. It appears that the datasets have about half of the target varaibles above zero (i.e. target beats awsi comparison index) and about half below the zero. This is a good sign.'))
+# 	frequency_sequence = seq(from=-1, to=1, length.out = 100)
+# 	full_distro_1year = cut(df_stocks_full$perc_change_stock_1year, breaks=frequency_sequence)
+# 	trend_distro_1year = cut(df_stocks_trend$perc_change_stock_1year, breaks=frequency_sequence)
+# 	log.NOTE(image(text='full_distro_90', url='full_distro_90.png'))
+# 	log.NOTE(h3('Financial Dataset Distribution of perc_change_stock_1year'))
+# 	png('./results/full_distro_1year.png')
+# 	plot(full_distro_1year)
+# 	dev.off()
+# 	log.NOTE(image(text='full_distro_1year', url='full_distro_1year.png'))
+# 	log.NOTE(h3('Trend Dataset Distribution of perc_change_stock_1year'))
+# 	png('./results/trend_distro_1year.png')
+# 	plot(trend_distro_1year)
+# 	dev.off()
+# 	log.NOTE(image(text='trend_distro_1year', url='trend_distro_1year.png'))
+# 	log.NOTE(bold('It is actually quite surprising/good that the distribution looks this normal'))
+
+# 	#######################################################
+# 	# print basic info
+# 	#######################################################
+# 	log.NOTE(paste0('Number of Unique Stock Symbols Used: `', length(unique_cleaned_stocks), '`'))
+# 	log.NOTE(paste0('Number of Original Stock Symbols: `', length(all_symbols), '`'))
+# 	log.NOTE(paste0('Number of total financial statements (quarterly and annual): `', nrow(df_stocks_full), '`'))
+# 	log.NOTE('NOTE: all numbers, regardless of source (yahoo/google), look to be in millions. Confirmed over multiple stocks/sources (b
+```
+
+
+
+
+
+
+
+---------------------------------------------------------------------------------------------------------------------------------------
+
+# Assumptions, Considerations, and Notes
+
+- `Consideration`: remove socks with median stock price < $5
+- `Consideration`: the analysis considers the price the day of the financials release, but most likely i won't invest immmediately after financial reporting, so if I do detect a predictable increase, i need to verify that the morjity of increase does not come within days of finnacial release, because that would mean any investment I made would have 'missed the boat'
+- `FUTURE FIX`: The `moving average` fields for closing prices are calculated after adding weekend/holiday dates and closing prices, wihch are filled with the previous day's closing price (in the `add_perc_info` function). So Friday's closing prices, for example, will be weighted more heavily since Sat and Sun will have the same price. I can't easily calculate moving prices before I fill weekend values because I need weekend values to create consistent/precise year lag (and lag value also has a moving average).
+- `FUTURE FIX`: when filtering, perhaps we don't just want to remove individual rows if the row contains invalid data, but perhaps we want to remove all rows for the same stock (chances are this isn't a big deal, because from what I can see, if one year is missing data, all years for that same stock are missing the same amount of data.)
+- `Improvement` - build and incorporate news/social media (e.g. twitter) sentiment and text analysis: https://www.wunderlist.com/#/tasks/2316044556
+- `Consideration`: model was built with data from non-recession timeframe.
+
+
