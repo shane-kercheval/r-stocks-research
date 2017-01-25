@@ -16,11 +16,15 @@ options(scipen=999) # non-scientific notation
 options(width=180)
 library(tidyverse)
 library(knitr)
-#clean_cache()
+library(modelr)
 
 opts_chunk$set(out.width='750px', dpi=200)
 
 pull_data <- FALSE
+if(pull_data)
+{
+    clean_cache()
+}
 ```
 
 # Purpose
@@ -147,18 +151,70 @@ kable(get_correlations(df_stocks_full, corr_threshold = 0.7, p_value_threshold =
 df_stocks_full = df_stocks_full %>% select(-Revenue) # Revenue is 100% correlated to TotalRevenue
 ```
 
+## Correlation, Maximal Information Coefficient
+
+- The following graph shows correlations and the Maximal Information Coefficient (second column) between many of the potential predictor variables and `perc_change_stock_1year` (the change in stock price from the time the financial statement was released to 1 year later (using moving average to account for daily fluctuations and random noise).
+    - it is faceted into 3 groups (`Absolute`, `Common Size`, and `Ratio`).
+    - `Absolute` are raw numbers from the financial statements (e.g. Total Revenue)
+    - `Common Size` are ratios expressed as a percentage of Sales, Assets, etc., depending on the particular financial statement (income statement, balance sheet, cash flow)
+    - `Ratio` are common ratios used to access the health of the company (e.g. Profit Margin, Quick Ratio, etc.) 
+- As you can see, the correlations are lower than expected, and a lot are negative (left of vertical reference line). Personally, I expected some of the financial ratios in particular to be higher correlated with the change of stock price (i.e. higher financial ratios mean healthier companies which means higher gains in stock price).
+- As a result, I used the Maximal Information Coefficient (MIC) which, according to this [blog post](http://menugget.blogspot.de/2011/12/maximal-information-coefficient-mic.html) the MIC measurement is 'able to equally describe the correlation between paired variables regardless of linear or nonlinear relationship'.
+- Interestingly, there is not much relationship between the correlation measure and MIC, and from looking ranking of both (not shown; only ranked by MIC in graph), it appears MIC is a better measure.
+- Also, variables that are `absolute` values tend to have lower correlations (and more negative correlations) then `common size` and `ratio` variables, suggesting some/most absolute ratios should be ignored in linear regression models.
+
+> Overall, the low/negative correlations suggests that my original plan of using a form of linear regression will probably not result in any significant results. 
+
+```{r maximal_information_coefficient, echo=FALSE, fig.height=15, fig.width=10, cached=TRUE}
+x = df_stocks_full %>%
+	select(-date, -symbol, -perc_change_stock_1year, -diff_above_index_1year, -contains('ratioh_')) # get rid of `ratioh` because we only want numeric columns
+y = df_stocks_full %>%
+	select(perc_change_stock_1year)
+
+correlations_with_perc_change <- cor(x, y=y, use='complete.obs')
+
+df_correlations = data_frame(variable=rownames(correlations_with_perc_change), correlation=as.numeric(correlations_with_perc_change)) %>%
+	mutate(correlation_rank = dense_rank(desc(correlation))) %>%
+	arrange(correlation_rank) %>% select(variable, correlation, correlation_rank)
+
+# original implementation found http://menugget.blogspot.de/2014/09/maximal-information-coefficient-part-ii.html
+library(minerva)
+minerva_results <- mine(x, y=y$perc_change_stock_1year, alpha=0.7)
+res <- data.frame(variable = rownames(minerva_results$MIC), MIC = c(minerva_results$MIC))# %>%
+res <- res %>% mutate(MIC_rank = dense_rank(desc(MIC))) %>% arrange(MIC_rank)
+final_correlations = inner_join(res, df_correlations, by = 'variable')
+
+long_correaltions = final_correlations %>%
+	mutate(variable = factor(variable, levels = rev(variable))) %>%
+	select(variable, MIC, correlation) %>%
+	gather(metric, amount, -variable)
+
+long_correaltions$type = 'absolute'
+long_correaltions$type = ifelse(grepl('^cs_', long_correaltions$variable), 'common size', long_correaltions$type)
+long_correaltions$type = ifelse(grepl('^ratios_', long_correaltions$variable), 'ratio', long_correaltions$type)
+
+ggplot(long_correaltions, aes(x = amount, y=variable, col=metric)) +
+	geom_point(size=2, alpha=0.9) +
+	geom_ref_line(v=0) +
+    facet_grid(type ~ ., space='free_y', scales = "free") +
+	ggtitle('MIC & Correlations') + ylab('Variables') + xlab('Amount') + theme(axis.text.x = element_text(angle = 50, hjust = 1)) + guides(fill=FALSE)
+```
+
+```{r , echo=FALSE}
+
+```
+
 ---------------------------------------------------------------------------------------------------------------------------------------
 
 # Sandbox / TODO
 
 
 ```{r sandbox}
-x = df_stocks_full %>% select(-date, -symbol, -perc_change_stock_1year, -contains('ratioh_')) # get rid of `ratioh` because we only want numeric columns
-all(complete.cases(x))
-y = df_stocks_full %>% select(perc_change_stock_1year)
-all(complete.cases(y))
-correlations_with_perc_change <- cor(x, y=y, use='complete.obs')
-temp = as.data.frame(correlations_with_perc_change) %>% mutate(variable=rownames(correlations_with_perc_change), c_rank = dense_rank(desc(perc_change_stock_1year))) %>% arrange(c_rank) %>% select(variable, perc_change_stock_1year, c_rank)
+ggplot(data = df_stocks_full, mapping = aes(x = DividendsperShareCommonStockPrimaryIssue, y = perc_change_stock_1year)) +
+	geom_point(alpha=0.2) # alpha avoids overfiting
+
+ggplot(data = df_stocks_full, mapping = aes(x = ratios_quick_ratio, y = perc_change_stock_1year)) +
+	geom_point(alpha=0.2) # alpha avoids overfiting
 
 
 ggplot(data = df_stocks_full, mapping = aes(x = TotalRevenue, y = perc_change_stock_1year)) +
@@ -174,7 +230,6 @@ ggplot(data = df_stocks_full, aes(perc_change_stock_1year)) +
 
 # perhaps clustering data will help, since 
 
-
 ggplot(data = df_stocks_full, mapping = aes(x = net_profit_margin, y = perc_change_stock_1year)) +
 	geom_point(alpha=0.2) # alpha avoids overfiting
 
@@ -188,26 +243,16 @@ ggplot(data = df_stocks_full, aes(net_profit_margin)) +
 
 # interesting that net profit margin doesn't appear to have any significance in determining perc_change_stock_1year. I would have expected a somewhat linear relationship
 
-
 # temp = df_stocks_full %>% filter(net_profit_margin >= 0.5)
 # # net profit margin is right skewed, there are `r nrow(temp)` stocks that have net profit margin >= 50%, although after review stock information, they look like legitimate values/symbols.
 
 
-# library(minerva)
-# minerva_results <- mine(x, y=y$perc_change_stock_1year, alpha=0.7)
-# res <- data.frame(MIC = c(minerva_results$MIC))
-# rownames(res) <- rownames(minerva_results$MIC)
-# res$MIC_Rank <- nrow(res) - rank(res$MIC, ties.method="first") + 1
-# res$Pearson <- P
-# res$Pearson_Rank <- nrow(res) - rank(abs(res$Pearson), ties.method="first") + 1
-# res <- res[order(res$MIC_Rank),]
-# res
-# res$variable = rownames(res)
-# asdf = merge(res, temp)
-# rows_original = nrow(x) # 7835
 
 
+```
 
+
+```{r, eval=FALSE, include=FALSE}
 # ##########
 # 	summary(df_stocks_full$TotalRevenue)
 	

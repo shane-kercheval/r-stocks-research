@@ -7,6 +7,7 @@
     -   [Data Summary:](#data-summary)
 -   [Exploring Data](#exploring-data)
     -   [Collinearity](#collinearity)
+    -   [Correlation, Maximal Information Coefficient](#correlation-maximal-information-coefficient)
 -   [Sandbox / TODO](#sandbox-todo)
 -   [Assumptions, Considerations, and Notes](#assumptions-considerations-and-notes)
 
@@ -94,12 +95,12 @@ head(acwi_closing)
     ## # A tibble: 6 × 6
     ##         date close close_lag_year close_moving_ave close_lag_year_moving_ave perc_change_1year
     ##       <date> <dbl>          <dbl>            <dbl>                     <dbl>             <dbl>
-    ## 1 2017-01-23 60.50             NA         59.79140                        NA                NA
-    ## 2 2017-01-22 60.49             NA         59.73846                        NA                NA
-    ## 3 2017-01-21 60.49             NA         59.68572                        NA                NA
-    ## 4 2017-01-20 60.49             NA         59.63297                        NA                NA
-    ## 5 2017-01-19 60.24             NA         59.57825                        NA                NA
-    ## 6 2017-01-18 60.41             NA         59.53408                        NA                NA
+    ## 1 2017-01-24 60.83             NA         59.84302                        NA                NA
+    ## 2 2017-01-23 60.50             NA         59.79140                        NA                NA
+    ## 3 2017-01-22 60.49             NA         59.73846                        NA                NA
+    ## 4 2017-01-21 60.49             NA         59.68572                        NA                NA
+    ## 5 2017-01-20 60.49             NA         59.63297                        NA                NA
+    ## 6 2017-01-19 60.24             NA         59.57825                        NA                NA
 
 ``` r
 tail(acwi_closing)
@@ -503,35 +504,50 @@ kable(get_correlations(df_stocks_full, corr_threshold = 0.7, p_value_threshold =
 >
 > Rather than removing all of these columns, I will keep them in for now (with the exception of Revenue which will be removed (TotalRevenue will remain)), and extract the columns I want to work with for particular models.
 
+Correlation, Maximal Information Coefficient
+--------------------------------------------
+
+-   The following graph shows correlations and the Maximal Information Coefficient (second column) between many of the potential predictor variables and `perc_change_stock_1year` (the change in stock price from the time the financial statement was released to 1 year later (using moving average to account for daily fluctuations and random noise).
+    -   it is faceted into 3 groups (`Absolute`, `Common Size`, and `Ratio`).
+    -   `Absolute` are raw numbers from the financial statements (e.g. Total Revenue)
+    -   `Common Size` are ratios expressed as a percentage of Sales, Assets, etc., depending on the particular financial statement (income statement, balance sheet, cash flow)
+    -   `Ratio` are common ratios used to access the health of the company (e.g. Profit Margin, Quick Ratio, etc.)
+-   As you can see, the correlations are lower than expected, and a lot are negative (left of vertical reference line). Personally, I expected some of the financial ratios in particular to be higher correlated with the change of stock price (i.e. higher financial ratios mean healthier companies which means higher gains in stock price).
+-   As a result, I used the Maximal Information Coefficient (MIC) which, according to this [blog post](http://menugget.blogspot.de/2011/12/maximal-information-coefficient-mic.html) the MIC measurement is 'able to equally describe the correlation between paired variables regardless of linear or nonlinear relationship'.
+-   Interestingly, there is not much relationship between the correlation measure and MIC, and from looking ranking of both (not shown; only ranked by MIC in graph), it appears MIC is a better measure.
+-   Also, variables that are `absolute` values tend to have lower correlations (and more negative correlations) then `common size` and `ratio` variables, suggesting some/most absolute ratios should be ignored in linear regression models.
+
+> Overall, the low/negative correlations suggests that my original plan of using a form of linear regression will probably not result in any significant results.
+
+    ## Warning in inner_join_impl(x, y, by$x, by$y, suffix$x, suffix$y): joining factor and character vector, coercing into character vector
+
+<img src="r-stocks-research_files/figure-markdown_github/maximal_information_coefficient-1.png" width="750px" />
+
 ------------------------------------------------------------------------
 
 Sandbox / TODO
 ==============
 
 ``` r
-x = df_stocks_full %>% select(-date, -symbol, -perc_change_stock_1year, -contains('ratioh_')) # get rid of `ratioh` because we only want numeric columns
-all(complete.cases(x))
-```
-
-    ## [1] TRUE
-
-``` r
-y = df_stocks_full %>% select(perc_change_stock_1year)
-all(complete.cases(y))
-```
-
-    ## [1] TRUE
-
-``` r
-correlations_with_perc_change <- cor(x, y=y, use='complete.obs')
-temp = as.data.frame(correlations_with_perc_change) %>% mutate(variable=rownames(correlations_with_perc_change), c_rank = dense_rank(desc(perc_change_stock_1year))) %>% arrange(c_rank) %>% select(variable, perc_change_stock_1year, c_rank)
-
-
-ggplot(data = df_stocks_full, mapping = aes(x = TotalRevenue, y = perc_change_stock_1year)) +
+ggplot(data = df_stocks_full, mapping = aes(x = DividendsperShareCommonStockPrimaryIssue, y = perc_change_stock_1year)) +
     geom_point(alpha=0.2) # alpha avoids overfiting
 ```
 
 <img src="r-stocks-research_files/figure-markdown_github/sandbox-1.png" width="750px" />
+
+``` r
+ggplot(data = df_stocks_full, mapping = aes(x = ratios_quick_ratio, y = perc_change_stock_1year)) +
+    geom_point(alpha=0.2) # alpha avoids overfiting
+```
+
+<img src="r-stocks-research_files/figure-markdown_github/sandbox-2.png" width="750px" />
+
+``` r
+ggplot(data = df_stocks_full, mapping = aes(x = TotalRevenue, y = perc_change_stock_1year)) +
+    geom_point(alpha=0.2) # alpha avoids overfiting
+```
+
+<img src="r-stocks-research_files/figure-markdown_github/sandbox-3.png" width="750px" />
 
 ``` r
 # makes sense that revenue isn't necessarily correlated with perc_change_stock_1year becuase revenue doesn't guarantee success or profit
@@ -540,24 +556,23 @@ ggplot(data = df_stocks_full) +
     geom_hex(mapping = aes(x = TotalRevenue, y = perc_change_stock_1year))
 ```
 
-<img src="r-stocks-research_files/figure-markdown_github/sandbox-2.png" width="750px" />
+<img src="r-stocks-research_files/figure-markdown_github/sandbox-4.png" width="750px" />
 
 ``` r
 ggplot(data = df_stocks_full, aes(perc_change_stock_1year)) +
     geom_freqpoly(bins = 15)
 ```
 
-<img src="r-stocks-research_files/figure-markdown_github/sandbox-3.png" width="750px" />
+<img src="r-stocks-research_files/figure-markdown_github/sandbox-5.png" width="750px" />
 
 ``` r
 # perhaps clustering data will help, since 
-
 
 ggplot(data = df_stocks_full, mapping = aes(x = net_profit_margin, y = perc_change_stock_1year)) +
     geom_point(alpha=0.2) # alpha avoids overfiting
 ```
 
-<img src="r-stocks-research_files/figure-markdown_github/sandbox-4.png" width="750px" />
+<img src="r-stocks-research_files/figure-markdown_github/sandbox-6.png" width="750px" />
 
 ``` r
 # makes sense that revenue isn't necessarily correlated with perc_change_stock_1year becuase revenue doesn't guarantee success or profit
@@ -566,130 +581,20 @@ ggplot(data = df_stocks_full) +
     geom_hex(mapping = aes(x = net_profit_margin, y = perc_change_stock_1year))
 ```
 
-<img src="r-stocks-research_files/figure-markdown_github/sandbox-5.png" width="750px" />
+<img src="r-stocks-research_files/figure-markdown_github/sandbox-7.png" width="750px" />
 
 ``` r
 ggplot(data = df_stocks_full, aes(net_profit_margin)) +
     geom_freqpoly(bins = 15)
 ```
 
-<img src="r-stocks-research_files/figure-markdown_github/sandbox-6.png" width="750px" />
+<img src="r-stocks-research_files/figure-markdown_github/sandbox-8.png" width="750px" />
 
 ``` r
 # interesting that net profit margin doesn't appear to have any significance in determining perc_change_stock_1year. I would have expected a somewhat linear relationship
 
-
 # temp = df_stocks_full %>% filter(net_profit_margin >= 0.5)
 # # net profit margin is right skewed, there are `r nrow(temp)` stocks that have net profit margin >= 50%, although after review stock information, they look like legitimate values/symbols.
-
-
-# library(minerva)
-# minerva_results <- mine(x, y=y$perc_change_stock_1year, alpha=0.7)
-# res <- data.frame(MIC = c(minerva_results$MIC))
-# rownames(res) <- rownames(minerva_results$MIC)
-# res$MIC_Rank <- nrow(res) - rank(res$MIC, ties.method="first") + 1
-# res$Pearson <- P
-# res$Pearson_Rank <- nrow(res) - rank(abs(res$Pearson), ties.method="first") + 1
-# res <- res[order(res$MIC_Rank),]
-# res
-# res$variable = rownames(res)
-# asdf = merge(res, temp)
-# rows_original = nrow(x) # 7835
-
-
-
-# ##########
-#   summary(df_stocks_full$TotalRevenue)
-    
-#   x = df_stocks_full %>% select(-date, -symbol, -contains('ratioh_')) # get rid of `ratioh` because we only want numeric columns
-#   column_names = colnames(x)
-#   #walk(column_names[1], ~ ggplot(x, aes(x= x[, column_names], y = y$perc_change_stock_1year)))
-#   column_data = map(column_names, ~ x[, .] )
-#   create_percentile_matrix(column_data, row_names = column_names)
-#     walk(column_names, ~  {
-#         plotgg = ggplot(x, aes(x=x[, .], y=perc_change_stock_1year, col = TotalRevenue > 5000)) + geom_point() + labs(x = .) # 5000 == 5B
-#         ggsave(filename = paste0('./data/perc_change_plots/', ., '.png'), plot=plotgg)
-#     })
-# #NOTE was going to see if there was a pattern between 'Large' and 'Small' companies (based on > 5B), in which case I would bucket into different groups and perhaps learning algorithms, but doesn't seem to be
-
-
-#   outlier_indexes = map(column_names, ~ which_outliers(x[, .]))
-#   outlier_indexes = sort(unique(unlist(outlier_indexes)))
-#   length(outlier_indexes)
-
-
-#   # Total Revenue over 600B seems off
-#   create_percentile_matrix(list(temp_x$TotalRevenue, temp_x$cs_net_income, y$perc_change_stock_1year), row_names = c('revenue', 'net income', 'perc_change_stock_1year'))
-#   ggplot(temp_x, aes(x=cs_net_income, y=perc_change_stock_1year)) + geom_point()
-
-
-#   boxplot(dat$TotalRevenue)
-#   summary(dat$perc_change_stock_1year)
-
-
-#TODO: NOTE: WHEN SEPERATING TRAINING VS TEST DATA, SEPRATE BASED ON YEAR (TRAINING BEFORE 2015-01-02, AND TEST AFTER 2015) We DON'T WANT TO ANALYZE IN THE SAME YEAR WE TESTED BECAUSE WE WON'T DO THIS IN REAL LIFE, OR WHEN WE SIMULATE FUTURE GAINS VIA QUANTMOD
-
-
-
-#   #######################################################
-#   # saved processed data to disk
-#   #######################################################
-#   log.NOTE(h2('Post Processing Summary'))
-#   log.NOTE(codebc(summary(df_stocks_full))) # before we change, let's pring out summary of data
-#   log.WARNING('WARNING: IN THE ABOVE SUMMARY, CHECK FOR `NA`s AND `Inf`s (NAs in perc_change_stock_1year is normal for quarterly data, will filter out later)')
-#   stock_file_name = './data/df_stocks_full.RDS'
-#   log.INFO(paste0('saving stock financial data to `', stock_file_name, '`'))
-#   saveRDS(df_stocks_full, file=stock_file_name)
-
-#   #######################################################
-#   # create dataset for trends
-#   #######################################################
-#   log.INFO('building trend dataset...')
-#   unique_cleaned_stocks = unique(df_stocks_full$symbol)
-#   df_stocks_trend = build_stock_trend_dataset(df_stocks_full=df_stocks_full, unique_cleaned_stocks=unique_cleaned_stocks)
-#   stock_file_name = './data/df_stocks_trend.RDS'
-#   log.INFO(paste0('saving stock trend data to `', stock_file_name, '`'))
-#   saveRDS(df_stocks_trend, file=stock_file_name)
-
-#   log.NOTE(paste0('`', nrow(df_stocks_trend), '` rows in `df_stocks_trend` dataset'))
-#   log.NOTE(paste0('`', length(unique(df_stocks_trend$symbol)), '` unique stocks in `df_stocks_trend` dataset (should be the same as the previous number'))
-#   log.NOTE(h2('Stock-Trend-Dataset Summary'))
-#   log.NOTE(codebc(summary(df_stocks_trend))) # before we change, let's pring out summary of data
-#   log.NOTE(h2('Stock-Trend-Dataset Date Summary'))
-#   summary(df_stocks_trend$date)
-
-#   #######################################################
-#   # Let's see what the distributions of the target variables are like (i.e. of the stocks we are analyzing, how many outperform awci comparison index, how many underperform)
-#   # since the comparison index is supposed to track the overall world stock market, and if the stocks we are analyzing are representative of the overall world market, we would expect a normal distirbution
-#   #######################################################
-#   log.NOTE(table_matrix(a_matrix=create_percentile_matrix(list_of_datasets=list(df_stocks_full$perc_change_stock_1year, df_stocks_trend$perc_change_stock_1year),
-#                               row_names=c('df_stocks_full$perc_change_stock_1year', 'df_stocks_trend$perc_change_stock_1year'),
-#                               percentiles=c(0, 0.025, 0.05, 0.10, 0.25, 0.40, 0.50, 0.60, 0.75, 0.90, 0.95, 0.975, 1)),
-#                       title='Distribution of Target Variable', row_header='dataset & target variable', title_format=h2))
-#   log.NOTE(bold('The target variable shows the stock performance compared with the awci comparison index. The distribution appears to be normal. It appears that the datasets have about half of the target varaibles above zero (i.e. target beats awsi comparison index) and about half below the zero. This is a good sign.'))
-#   frequency_sequence = seq(from=-1, to=1, length.out = 100)
-#   full_distro_1year = cut(df_stocks_full$perc_change_stock_1year, breaks=frequency_sequence)
-#   trend_distro_1year = cut(df_stocks_trend$perc_change_stock_1year, breaks=frequency_sequence)
-#   log.NOTE(image(text='full_distro_90', url='full_distro_90.png'))
-#   log.NOTE(h3('Financial Dataset Distribution of perc_change_stock_1year'))
-#   png('./results/full_distro_1year.png')
-#   plot(full_distro_1year)
-#   dev.off()
-#   log.NOTE(image(text='full_distro_1year', url='full_distro_1year.png'))
-#   log.NOTE(h3('Trend Dataset Distribution of perc_change_stock_1year'))
-#   png('./results/trend_distro_1year.png')
-#   plot(trend_distro_1year)
-#   dev.off()
-#   log.NOTE(image(text='trend_distro_1year', url='trend_distro_1year.png'))
-#   log.NOTE(bold('It is actually quite surprising/good that the distribution looks this normal'))
-
-#   #######################################################
-#   # print basic info
-#   #######################################################
-#   log.NOTE(paste0('Number of Unique Stock Symbols Used: `', length(unique_cleaned_stocks), '`'))
-#   log.NOTE(paste0('Number of Original Stock Symbols: `', length(all_symbols), '`'))
-#   log.NOTE(paste0('Number of total financial statements (quarterly and annual): `', nrow(df_stocks_full), '`'))
-#   log.NOTE('NOTE: all numbers, regardless of source (yahoo/google), look to be in millions. Confirmed over multiple stocks/sources (b
 ```
 
 ------------------------------------------------------------------------
