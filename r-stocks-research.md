@@ -8,6 +8,8 @@
 -   [Exploring Data](#exploring-data)
     -   [Collinearity](#collinearity)
     -   [Correlation, Maximal Information Coefficient](#correlation-maximal-information-coefficient)
+    -   [Looking at Data](#looking-at-data)
+    -   [Segmentation and Clustering](#segmentation-and-clustering)
 -   [Sandbox / TODO](#sandbox-todo)
 -   [Assumptions, Considerations, and Notes](#assumptions-considerations-and-notes)
 
@@ -95,12 +97,12 @@ head(acwi_closing)
     ## # A tibble: 6 × 6
     ##         date close close_lag_year close_moving_ave close_lag_year_moving_ave perc_change_1year
     ##       <date> <dbl>          <dbl>            <dbl>                     <dbl>             <dbl>
-    ## 1 2017-01-24 60.83             NA         59.84302                        NA                NA
-    ## 2 2017-01-23 60.50             NA         59.79140                        NA                NA
-    ## 3 2017-01-22 60.49             NA         59.73846                        NA                NA
-    ## 4 2017-01-21 60.49             NA         59.68572                        NA                NA
-    ## 5 2017-01-20 60.49             NA         59.63297                        NA                NA
-    ## 6 2017-01-19 60.24             NA         59.57825                        NA                NA
+    ## 1 2017-01-25 61.43             NA         59.90029                        NA                NA
+    ## 2 2017-01-24 60.83             NA         59.84302                        NA                NA
+    ## 3 2017-01-23 60.50             NA         59.79140                        NA                NA
+    ## 4 2017-01-22 60.49             NA         59.73846                        NA                NA
+    ## 5 2017-01-21 60.49             NA         59.68572                        NA                NA
+    ## 6 2017-01-20 60.49             NA         59.63297                        NA                NA
 
 ``` r
 tail(acwi_closing)
@@ -523,6 +525,335 @@ Correlation, Maximal Information Coefficient
 
 <img src="r-stocks-research_files/figure-markdown_github/maximal_information_coefficient-1.png" width="750px" />
 
+Looking at Data
+---------------
+
+-   Looking at variables against `perc_change_stock_1year`
+
+### Variables with High MIC
+
+<img src="r-stocks-research_files/figure-markdown_github/mic_graphs-1.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/mic_graphs-2.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/mic_graphs-3.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/mic_graphs-4.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/mic_graphs-5.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/mic_graphs-6.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/mic_graphs-7.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/mic_graphs-8.png" width="750px" />
+
+> It is interesting that there is no clear pattern in `net_profit_margin` vs. `perc_change_stock_1year`. I would have expected a somewhat linear relationship.
+
+### Variables with High MIC
+
+<img src="r-stocks-research_files/figure-markdown_github/correlation_graphs-1.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/correlation_graphs-2.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/correlation_graphs-3.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/correlation_graphs-4.png" width="750px" />
+
+> No patterns that I can see.
+
+<img src="r-stocks-research_files/figure-markdown_github/normality_graphs-1.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/normality_graphs-2.png" width="750px" />
+
+> Most data support a semi-normally distributed data, but without pattern in relation to the change in the stock price a year from the release of the financial statement (`perc_change_stock_1year`).
+
+Segmentation and Clustering
+---------------------------
+
+-   Before we get into prediction, I'm wondering if there distinguishable segments that we could organic the stocks into, from which patterns (in the dependent variables) would would arise.
+-   I'm going to try to leave the dependent variables out (e.g. `perc_change_stock_1year`) and then add them back in after clusting (because presumably if we would like to use clustering to aid in prediction, we would have to cluster on only the independent variables that we would have at the time of clustering/prediction).
+
+> I will be using hierarchical clustering, primarily because k-means clustering starts with a random choice of cluster center and, therefore, will most likely yield different results each time it is ran (with the same data). Hierarchical will most likely be more consistent.
+>
+> I'll attempt to cluster on common size ratios as well as some of the more common ratios
+
+### Common Size Clustering
+
+-   I'll start with all `cs_` columns, but I'll probably scale down and pick specific columns based on high MIC scorees and common sense
+
+<img src="r-stocks-research_files/figure-markdown_github/clustering_common_size-1.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/clustering_common_size-2.png" width="750px" />
+
+    ## # A tibble: 2 × 4
+    ##   cluster_2 count median_stock_change standard_dev_stock_change
+    ##       <int> <int>               <dbl>                     <dbl>
+    ## 1         1   765           0.1369732                 0.2790368
+    ## 2         2  1686           0.1329816                 0.2939054
+
+<img src="r-stocks-research_files/figure-markdown_github/clustering_common_size-3.png" width="750px" />
+
+    ## # A tibble: 3 × 4
+    ##   cluster_3 count median_stock_change standard_dev_stock_change
+    ##       <int> <int>               <dbl>                     <dbl>
+    ## 1         1   765           0.1369732                 0.2790368
+    ## 2         2   984           0.1356495                 0.2949958
+    ## 3         3   702           0.1324191                 0.2922391
+
+<img src="r-stocks-research_files/figure-markdown_github/clustering_common_size-4.png" width="750px" />
+
+    ## # A tibble: 4 × 4
+    ##   cluster_4 count median_stock_change standard_dev_stock_change
+    ##       <int> <int>               <dbl>                     <dbl>
+    ## 1         1   535           0.1405393                 0.2853549
+    ## 2         2   984           0.1356495                 0.2949958
+    ## 3         3   230           0.1358728                 0.2618426
+    ## 4         4   702           0.1324191                 0.2922391
+
+<img src="r-stocks-research_files/figure-markdown_github/clustering_common_size-5.png" width="750px" />
+
+    ## # A tibble: 5 × 4
+    ##   cluster_5 count median_stock_change standard_dev_stock_change
+    ##       <int> <int>               <dbl>                     <dbl>
+    ## 1         1   535           0.1405393                 0.2853549
+    ## 2         2   221           0.1452904                 0.3206784
+    ## 3         3   230           0.1358728                 0.2618426
+    ## 4         4   763           0.1284353                 0.2869281
+    ## 5         5   702           0.1324191                 0.2922391
+
+<img src="r-stocks-research_files/figure-markdown_github/clustering_common_size-6.png" width="750px" />
+
+    ## # A tibble: 6 × 4
+    ##   cluster_6 count median_stock_change standard_dev_stock_change
+    ##       <int> <int>               <dbl>                     <dbl>
+    ## 1         1   535           0.1405393                 0.2853549
+    ## 2         2   221           0.1452904                 0.3206784
+    ## 3         3   230           0.1358728                 0.2618426
+    ## 4         4   520           0.1365561                 0.2952919
+    ## 5         5   243           0.1193646                 0.2682705
+    ## 6         6   702           0.1324191                 0.2922391
+
+<img src="r-stocks-research_files/figure-markdown_github/clustering_common_size-7.png" width="750px" />
+
+    ## # A tibble: 7 × 4
+    ##   cluster_7 count median_stock_change standard_dev_stock_change
+    ##       <int> <int>               <dbl>                     <dbl>
+    ## 1         1   322           0.1322482                 0.2793672
+    ## 2         2   221           0.1452904                 0.3206784
+    ## 3         3   230           0.1358728                 0.2618426
+    ## 4         4   520           0.1365561                 0.2952919
+    ## 5         5   243           0.1193646                 0.2682705
+    ## 6         6   213           0.1515404                 0.2930921
+    ## 7         7   702           0.1324191                 0.2922391
+
+<img src="r-stocks-research_files/figure-markdown_github/clustering_common_size-8.png" width="750px" />
+
+    ## # A tibble: 8 × 4
+    ##   cluster_8 count median_stock_change standard_dev_stock_change
+    ##       <int> <int>               <dbl>                     <dbl>
+    ## 1         1   322           0.1322482                 0.2793672
+    ## 2         2   221           0.1452904                 0.3206784
+    ## 3         3   230           0.1358728                 0.2618426
+    ## 4         4   520           0.1365561                 0.2952919
+    ## 5         5   243           0.1193646                 0.2682705
+    ## 6         6   213           0.1515404                 0.2930921
+    ## 7         7   430           0.1147104                 0.3221084
+    ## 8         8   272           0.1647560                 0.2327673
+
+<img src="r-stocks-research_files/figure-markdown_github/clustering_common_size-9.png" width="750px" />
+
+    ## # A tibble: 9 × 4
+    ##   cluster_9 count median_stock_change standard_dev_stock_change
+    ##       <int> <int>               <dbl>                     <dbl>
+    ## 1         1   322          0.13224821                 0.2793672
+    ## 2         2   221          0.14529041                 0.3206784
+    ## 3         3   230          0.13587281                 0.2618426
+    ## 4         4   520          0.13655607                 0.2952919
+    ## 5         5   243          0.11936455                 0.2682705
+    ## 6         6   213          0.15154037                 0.2930921
+    ## 7         7   262          0.12291769                 0.3269301
+    ## 8         8   272          0.16475603                 0.2327673
+    ## 9         9   168          0.08600884                 0.3111499
+
+<img src="r-stocks-research_files/figure-markdown_github/clustering_common_size-10.png" width="750px" />
+
+    ## # A tibble: 10 × 4
+    ##    cluster_10 count median_stock_change standard_dev_stock_change
+    ##         <int> <int>               <dbl>                     <dbl>
+    ## 1           1   322          0.13224821                 0.2793672
+    ## 2           2   221          0.14529041                 0.3206784
+    ## 3           3   230          0.13587281                 0.2618426
+    ## 4           4   281          0.12081606                 0.2769001
+    ## 5           5   243          0.11936455                 0.2682705
+    ## 6           6   213          0.15154037                 0.2930921
+    ## 7           7   239          0.14256650                 0.3161310
+    ## 8           8   262          0.12291769                 0.3269301
+    ## 9           9   272          0.16475603                 0.2327673
+    ## 10         10   168          0.08600884                 0.3111499
+
+<img src="r-stocks-research_files/figure-markdown_github/clustering_common_size-11.png" width="750px" />
+
+    ## # A tibble: 11 × 4
+    ##    cluster_11 count median_stock_change standard_dev_stock_change
+    ##         <int> <int>               <dbl>                     <dbl>
+    ## 1           1   322          0.13224821                 0.2793672
+    ## 2           2   221          0.14529041                 0.3206784
+    ## 3           3   218          0.13587281                 0.2532584
+    ## 4           4   281          0.12081606                 0.2769001
+    ## 5           5   243          0.11936455                 0.2682705
+    ## 6           6   213          0.15154037                 0.2930921
+    ## 7           7   239          0.14256650                 0.3161310
+    ## 8           8   262          0.12291769                 0.3269301
+    ## 9           9   272          0.16475603                 0.2327673
+    ## 10         10   168          0.08600884                 0.3111499
+    ## 11         11    12          0.15120089                 0.3950411
+
+<img src="r-stocks-research_files/figure-markdown_github/clustering_common_size-12.png" width="750px" />
+
+    ## # A tibble: 12 × 4
+    ##    cluster_12 count median_stock_change standard_dev_stock_change
+    ##         <int> <int>               <dbl>                     <dbl>
+    ## 1           1   322          0.13224821                 0.2793672
+    ## 2           2   169          0.14490319                 0.3208572
+    ## 3           3   218          0.13587281                 0.2532584
+    ## 4           4   281          0.12081606                 0.2769001
+    ## 5           5   243          0.11936455                 0.2682705
+    ## 6           6   213          0.15154037                 0.2930921
+    ## 7           7   239          0.14256650                 0.3161310
+    ## 8           8   262          0.12291769                 0.3269301
+    ## 9           9   272          0.16475603                 0.2327673
+    ## 10         10   168          0.08600884                 0.3111499
+    ## 11         11    52          0.14622150                 0.3206496
+    ## 12         12    12          0.15120089                 0.3950411
+
+> The calculated number of ideal clusters is 2, which is consistent with the dendogram above.
+>
+> While there are some interest patterns in the clusters, it doesn't appear that the clusters result in different (future;1-year) stock prices, showing in the corresponding tables.
+
+### Common Size Clustering
+
+<img src="r-stocks-research_files/figure-markdown_github/clustering_ratios-1.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/clustering_ratios-2.png" width="750px" />
+
+    ## # A tibble: 2 × 4
+    ##   cluster_2 count median_stock_change standard_dev_stock_change
+    ##       <int> <int>               <dbl>                     <dbl>
+    ## 1         1  1886           0.1386876                 0.2934313
+    ## 2         2   565           0.1158013                 0.2744333
+
+<img src="r-stocks-research_files/figure-markdown_github/clustering_ratios-3.png" width="750px" />
+
+    ## # A tibble: 3 × 4
+    ##   cluster_3 count median_stock_change standard_dev_stock_change
+    ##       <int> <int>               <dbl>                     <dbl>
+    ## 1         1  1065           0.1392555                 0.2943416
+    ## 2         2   565           0.1158013                 0.2744333
+    ## 3         3   821           0.1385058                 0.2924216
+
+<img src="r-stocks-research_files/figure-markdown_github/clustering_ratios-4.png" width="750px" />
+
+    ## # A tibble: 4 × 4
+    ##   cluster_4 count median_stock_change standard_dev_stock_change
+    ##       <int> <int>               <dbl>                     <dbl>
+    ## 1         1  1065           0.1392555                 0.2943416
+    ## 2         2   343           0.1123365                 0.2599273
+    ## 3         3   821           0.1385058                 0.2924216
+    ## 4         4   222           0.1339851                 0.2938171
+
+<img src="r-stocks-research_files/figure-markdown_github/clustering_ratios-5.png" width="750px" />
+
+    ## # A tibble: 5 × 4
+    ##   cluster_5 count median_stock_change standard_dev_stock_change
+    ##       <int> <int>               <dbl>                     <dbl>
+    ## 1         1  1065           0.1392555                 0.2943416
+    ## 2         2   343           0.1123365                 0.2599273
+    ## 3         3   612           0.1462560                 0.2971033
+    ## 4         4   222           0.1339851                 0.2938171
+    ## 5         5   209           0.1132625                 0.2760824
+
+<img src="r-stocks-research_files/figure-markdown_github/clustering_ratios-6.png" width="750px" />
+
+    ## # A tibble: 6 × 4
+    ##   cluster_6 count median_stock_change standard_dev_stock_change
+    ##       <int> <int>               <dbl>                     <dbl>
+    ## 1         1   268           0.1305126                 0.2902214
+    ## 2         2   343           0.1123365                 0.2599273
+    ## 3         3   797           0.1405346                 0.2957459
+    ## 4         4   612           0.1462560                 0.2971033
+    ## 5         5   222           0.1339851                 0.2938171
+    ## 6         6   209           0.1132625                 0.2760824
+
+<img src="r-stocks-research_files/figure-markdown_github/clustering_ratios-7.png" width="750px" />
+
+    ## # A tibble: 7 × 4
+    ##   cluster_7 count median_stock_change standard_dev_stock_change
+    ##       <int> <int>               <dbl>                     <dbl>
+    ## 1         1   268           0.1305126                 0.2902214
+    ## 2         2   343           0.1123365                 0.2599273
+    ## 3         3   362           0.1375404                 0.2939348
+    ## 4         4   612           0.1462560                 0.2971033
+    ## 5         5   435           0.1452904                 0.2975649
+    ## 6         6   222           0.1339851                 0.2938171
+    ## 7         7   209           0.1132625                 0.2760824
+
+<img src="r-stocks-research_files/figure-markdown_github/clustering_ratios-8.png" width="750px" />
+
+    ## # A tibble: 8 × 4
+    ##   cluster_8 count median_stock_change standard_dev_stock_change
+    ##       <int> <int>               <dbl>                     <dbl>
+    ## 1         1   268           0.1305126                 0.2902214
+    ## 2         2   343           0.1123365                 0.2599273
+    ## 3         3   362           0.1375404                 0.2939348
+    ## 4         4   394           0.1427258                 0.2926363
+    ## 5         5   435           0.1452904                 0.2975649
+    ## 6         6   218           0.1588094                 0.3056797
+    ## 7         7   222           0.1339851                 0.2938171
+    ## 8         8   209           0.1132625                 0.2760824
+
+<img src="r-stocks-research_files/figure-markdown_github/clustering_ratios-9.png" width="750px" />
+
+    ## # A tibble: 9 × 4
+    ##   cluster_9 count median_stock_change standard_dev_stock_change
+    ##       <int> <int>               <dbl>                     <dbl>
+    ## 1         1   268           0.1305126                 0.2902214
+    ## 2         2   172           0.1139702                 0.2658797
+    ## 3         3   362           0.1375404                 0.2939348
+    ## 4         4   394           0.1427258                 0.2926363
+    ## 5         5   171           0.1046135                 0.2528845
+    ## 6         6   435           0.1452904                 0.2975649
+    ## 7         7   218           0.1588094                 0.3056797
+    ## 8         8   222           0.1339851                 0.2938171
+    ## 9         9   209           0.1132625                 0.2760824
+
+<img src="r-stocks-research_files/figure-markdown_github/clustering_ratios-10.png" width="750px" />
+
+    ## # A tibble: 10 × 4
+    ##    cluster_10 count median_stock_change standard_dev_stock_change
+    ##         <int> <int>               <dbl>                     <dbl>
+    ## 1           1   268           0.1305126                 0.2902214
+    ## 2           2   172           0.1139702                 0.2658797
+    ## 3           3   362           0.1375404                 0.2939348
+    ## 4           4   394           0.1427258                 0.2926363
+    ## 5           5   167           0.1046135                 0.2511960
+    ## 6           6   435           0.1452904                 0.2975649
+    ## 7           7   218           0.1588094                 0.3056797
+    ## 8           8   222           0.1339851                 0.2938171
+    ## 9           9   209           0.1132625                 0.2760824
+    ## 10         10     4           0.2417541                 0.3408611
+
+<img src="r-stocks-research_files/figure-markdown_github/clustering_ratios-11.png" width="750px" />
+
+    ## # A tibble: 11 × 4
+    ##    cluster_11 count median_stock_change standard_dev_stock_change
+    ##         <int> <int>               <dbl>                     <dbl>
+    ## 1           1   268           0.1305126                 0.2902214
+    ## 2           2   172           0.1139702                 0.2658797
+    ## 3           3   362           0.1375404                 0.2939348
+    ## 4           4   394           0.1427258                 0.2926363
+    ## 5           5   167           0.1046135                 0.2511960
+    ## 6           6   278           0.1242127                 0.3096596
+    ## 7           7   218           0.1588094                 0.3056797
+    ## 8           8   222           0.1339851                 0.2938171
+    ## 9           9   209           0.1132625                 0.2760824
+    ## 10         10   157           0.1648623                 0.2757529
+    ## 11         11     4           0.2417541                 0.3408611
+
+<img src="r-stocks-research_files/figure-markdown_github/clustering_ratios-12.png" width="750px" />
+
+    ## # A tibble: 12 × 4
+    ##    cluster_12 count median_stock_change standard_dev_stock_change
+    ##         <int> <int>               <dbl>                     <dbl>
+    ## 1           1   322          0.13224821                 0.2793672
+    ## 2           2   169          0.14490319                 0.3208572
+    ## 3           3   218          0.13587281                 0.2532584
+    ## 4           4   281          0.12081606                 0.2769001
+    ## 5           5   243          0.11936455                 0.2682705
+    ## 6           6   213          0.15154037                 0.2930921
+    ## 7           7   239          0.14256650                 0.3161310
+    ## 8           8   262          0.12291769                 0.3269301
+    ## 9           9   272          0.16475603                 0.2327673
+    ## 10         10   168          0.08600884                 0.3111499
+    ## 11         11    52          0.14622150                 0.3206496
+    ## 12         12    12          0.15120089                 0.3950411
+
+> It will be an interesting experiment to divide the stocks up by cluster to see if machine learning algorithms predict better when focusing on clustered data. The drawback will be a reduced test/training set.
+
 ------------------------------------------------------------------------
 
 Sandbox / TODO
@@ -530,21 +861,21 @@ Sandbox / TODO
 
 ``` r
 ggplot(data = df_stocks_full, mapping = aes(x = DividendsperShareCommonStockPrimaryIssue, y = perc_change_stock_1year)) +
-    geom_point(alpha=0.2) # alpha avoids overfiting
+    geom_point(alpha=0.2)
 ```
 
 <img src="r-stocks-research_files/figure-markdown_github/sandbox-1.png" width="750px" />
 
 ``` r
 ggplot(data = df_stocks_full, mapping = aes(x = ratios_quick_ratio, y = perc_change_stock_1year)) +
-    geom_point(alpha=0.2) # alpha avoids overfiting
+    geom_point(alpha=0.2)
 ```
 
 <img src="r-stocks-research_files/figure-markdown_github/sandbox-2.png" width="750px" />
 
 ``` r
 ggplot(data = df_stocks_full, mapping = aes(x = TotalRevenue, y = perc_change_stock_1year)) +
-    geom_point(alpha=0.2) # alpha avoids overfiting
+    geom_point(alpha=0.2)
 ```
 
 <img src="r-stocks-research_files/figure-markdown_github/sandbox-3.png" width="750px" />
@@ -569,7 +900,7 @@ ggplot(data = df_stocks_full, aes(perc_change_stock_1year)) +
 # perhaps clustering data will help, since 
 
 ggplot(data = df_stocks_full, mapping = aes(x = net_profit_margin, y = perc_change_stock_1year)) +
-    geom_point(alpha=0.2) # alpha avoids overfiting
+    geom_point(alpha=0.2)
 ```
 
 <img src="r-stocks-research_files/figure-markdown_github/sandbox-6.png" width="750px" />
