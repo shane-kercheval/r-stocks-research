@@ -265,112 +265,117 @@ ggplot(data = df_stocks_full, aes(ratios_quick_ratio)) +
 - I'll start with all `cs_` columns, but I'll probably scale down and pick specific columns based on high MIC scorees and common sense
 
 ```{r clustering_common_size, echo=FALSE}
-df_stocks_common_size <- df_stocks_full %>% select(perc_change_stock_1year, dplyr::contains('cs_'))
+TODO FIX MERGE COLUMN, ADD ID
 
-if(sum(duplicated(df_stocks_common_size)) > 0)
-{
-	stop('duplicated common size stock records')
-}
+# df_stocks_common_size <- df_stocks_full %>% select(perc_change_stock_1year, dplyr::contains('cs_'))
+# df_stocks_common_size
 
-if(any(is.na(df_stocks_common_size)))
-{
-	stop('common size stock records contain NAs')
-}
+# if(sum(duplicated(df_stocks_common_size)) > 0)
+# {
+# 	stop('duplicated common size stock records')
+# }
 
-ideal_clusters = get_ideal_number_of_clusters(data_frame=df_stocks_common_size, named_column='perc_change_stock_1year')
-hierarchical_dendogram(data_frame=df_stocks_common_size, named_column='perc_change_stock_1year', ideal_cluster_size=ideal_clusters, path=NULL)
+# if(any(is.na(df_stocks_common_size)))
+# {
+# 	stop('common size stock records contain NAs')
+# }
 
-cluster_plus_minus = 5
-num_clusters = 7 # ideal_clusters
-hierarchical_results = hierarchical_cluster_analysis(data_frame=df_stocks_common_size, merge_column='perc_change_stock_1year', 
-	num_clusters=num_clusters, plus_minus=cluster_plus_minus)
-mstd = hierarchical_get_clusters_mean_st_dev(hierarchical_results=hierarchical_results)
-best_cluster_index_norm = which(mstd == min(mstd))
-df_stocks_common_size_clusters = hierarchical_merge_cluster_data(original_data_frame=df_stocks_common_size, 
-	merge_column='perc_change_stock_1year', num_clusters=num_clusters, plus_minus=cluster_plus_minus)
+# ideal_clusters = get_ideal_number_of_clusters(data_frame=df_stocks_common_size, named_column='perc_change_stock_1year')
+# hierarchical_dendogram(data_frame=df_stocks_common_size, named_column='perc_change_stock_1year', ideal_cluster_size=ideal_clusters, path=NULL)
 
-hierarchical_heatmaps = save_hierarchical_heatmaps(hierarchical_results=hierarchical_results)
+# cluster_plus_minus = 5
+# num_clusters = 7 # ideal_clusters
+# hierarchical_results = hierarchical_cluster_analysis(data_frame=df_stocks_common_size, merge_column='perc_change_stock_1year', 
+# 	num_clusters=num_clusters, plus_minus=cluster_plus_minus)
+# mstd = hierarchical_get_clusters_mean_st_dev(hierarchical_results=hierarchical_results)
+# best_cluster_index_norm = which(mstd == min(mstd))
+# df_stocks_common_size_clusters = hierarchical_merge_cluster_data(original_data_frame=df_stocks_common_size, 
+# 	merge_column='perc_change_stock_1year', num_clusters=num_clusters, plus_minus=cluster_plus_minus)
 
-hierarchical_heatmaps[[1]]
-df_stocks_common_size_clusters %>% group_by(cluster_2) %>% summarize(count = n(), median_stock_change=median(perc_change_stock_1year), standard_dev_stock_change=sd(perc_change_stock_1year))
-hierarchical_heatmaps[[2]]
-df_stocks_common_size_clusters %>% group_by(cluster_3) %>% summarize(count = n(), median_stock_change=median(perc_change_stock_1year), standard_dev_stock_change=sd(perc_change_stock_1year))
-hierarchical_heatmaps[[3]]
-df_stocks_common_size_clusters %>% group_by(cluster_4) %>% summarize(count = n(), median_stock_change=median(perc_change_stock_1year), standard_dev_stock_change=sd(perc_change_stock_1year))
-hierarchical_heatmaps[[4]]
-df_stocks_common_size_clusters %>% group_by(cluster_5) %>% summarize(count = n(), median_stock_change=median(perc_change_stock_1year), standard_dev_stock_change=sd(perc_change_stock_1year))
-hierarchical_heatmaps[[5]]
-df_stocks_common_size_clusters %>% group_by(cluster_6) %>% summarize(count = n(), median_stock_change=median(perc_change_stock_1year), standard_dev_stock_change=sd(perc_change_stock_1year))
-hierarchical_heatmaps[[6]]
-df_stocks_common_size_clusters %>% group_by(cluster_7) %>% summarize(count = n(), median_stock_change=median(perc_change_stock_1year), standard_dev_stock_change=sd(perc_change_stock_1year))
-hierarchical_heatmaps[[7]]
-df_stocks_common_size_clusters %>% group_by(cluster_8) %>% summarize(count = n(), median_stock_change=median(perc_change_stock_1year), standard_dev_stock_change=sd(perc_change_stock_1year))
-hierarchical_heatmaps[[8]]
-df_stocks_common_size_clusters %>% group_by(cluster_9) %>% summarize(count = n(), median_stock_change=median(perc_change_stock_1year), standard_dev_stock_change=sd(perc_change_stock_1year))
-hierarchical_heatmaps[[9]]
-df_stocks_common_size_clusters %>% group_by(cluster_10) %>% summarize(count = n(), median_stock_change=median(perc_change_stock_1year), standard_dev_stock_change=sd(perc_change_stock_1year))
-hierarchical_heatmaps[[10]]
-df_stocks_common_size_clusters %>% group_by(cluster_11) %>% summarize(count = n(), median_stock_change=median(perc_change_stock_1year), standard_dev_stock_change=sd(perc_change_stock_1year))
-hierarchical_heatmaps[[11]]
-df_stocks_common_size_clusters %>% group_by(cluster_12) %>% summarize(count = n(), median_stock_change=median(perc_change_stock_1year), standard_dev_stock_change=sd(perc_change_stock_1year))
+# hierarchical_heatmaps = save_hierarchical_heatmaps(hierarchical_results=hierarchical_results)
+
+# hierarchical_heatmaps[[1]]
+# df_stocks_common_size_clusters %>% group_by(cluster_2) %>% summarize(count = n(), median_stock_change=median(perc_change_stock_1year), standard_dev_stock_change=sd(perc_change_stock_1year))
+# hierarchical_heatmaps[[2]]
+# df_stocks_common_size_clusters %>% group_by(cluster_3) %>% summarize(count = n(), median_stock_change=median(perc_change_stock_1year), standard_dev_stock_change=sd(perc_change_stock_1year))
+# hierarchical_heatmaps[[3]]
+# df_stocks_common_size_clusters %>% group_by(cluster_4) %>% summarize(count = n(), median_stock_change=median(perc_change_stock_1year), standard_dev_stock_change=sd(perc_change_stock_1year))
+# hierarchical_heatmaps[[4]]
+# df_stocks_common_size_clusters %>% group_by(cluster_5) %>% summarize(count = n(), median_stock_change=median(perc_change_stock_1year), standard_dev_stock_change=sd(perc_change_stock_1year))
+# hierarchical_heatmaps[[5]]
+# df_stocks_common_size_clusters %>% group_by(cluster_6) %>% summarize(count = n(), median_stock_change=median(perc_change_stock_1year), standard_dev_stock_change=sd(perc_change_stock_1year))
+# hierarchical_heatmaps[[6]]
+# df_stocks_common_size_clusters %>% group_by(cluster_7) %>% summarize(count = n(), median_stock_change=median(perc_change_stock_1year), standard_dev_stock_change=sd(perc_change_stock_1year))
+# hierarchical_heatmaps[[7]]
+# df_stocks_common_size_clusters %>% group_by(cluster_8) %>% summarize(count = n(), median_stock_change=median(perc_change_stock_1year), standard_dev_stock_change=sd(perc_change_stock_1year))
+# hierarchical_heatmaps[[8]]
+# df_stocks_common_size_clusters %>% group_by(cluster_9) %>% summarize(count = n(), median_stock_change=median(perc_change_stock_1year), standard_dev_stock_change=sd(perc_change_stock_1year))
+# hierarchical_heatmaps[[9]]
+# df_stocks_common_size_clusters %>% group_by(cluster_10) %>% summarize(count = n(), median_stock_change=median(perc_change_stock_1year), standard_dev_stock_change=sd(perc_change_stock_1year))
+# hierarchical_heatmaps[[10]]
+# df_stocks_common_size_clusters %>% group_by(cluster_11) %>% summarize(count = n(), median_stock_change=median(perc_change_stock_1year), standard_dev_stock_change=sd(perc_change_stock_1year))
+# hierarchical_heatmaps[[11]]
+# df_stocks_common_size_clusters %>% group_by(cluster_12) %>% summarize(count = n(), median_stock_change=median(perc_change_stock_1year), standard_dev_stock_change=sd(perc_change_stock_1year))
 
 ```
 
-> The calculated number of ideal clusters is `r ideal_clusters`, which is consistent with the dendogram above. 
+> The calculated number of ideal clusters is `r ideal_clusters`, which is shown in the dendogram above. 
 >
 > While there are some interest patterns in the clusters, it doesn't appear that the clusters result in different (future;1-year) stock prices, showing in the corresponding tables.
 
-### Common Size Clustering
+### Ratio Clustering
 
 ```{r clustering_ratios, echo=FALSE}
-df_stocks_ratios <- df_stocks_full %>% select(perc_change_stock_1year, dplyr::contains('ratios_'), dplyr::contains('ratioh_'))
+TODO FIX MERGE COLUMN, ADD ID
 
-if(sum(duplicated(df_stocks_ratios)) > 0)
-{
-    stop('duplicated common size stock records')
-}
+# df_stocks_ratios <- df_stocks_full %>% select(perc_change_stock_1year, dplyr::contains('ratios_'), dplyr::contains('ratioh_'))
 
-if(any(is.na(df_stocks_ratios)))
-{
-    stop('common size stock records contain NAs')
-}
+# if(sum(duplicated(df_stocks_ratios)) > 0)
+# {
+#     stop('duplicated common size stock records')
+# }
 
-ideal_clusters = get_ideal_number_of_clusters(data_frame=df_stocks_ratios, named_column='perc_change_stock_1year')
-hierarchical_dendogram(data_frame=df_stocks_ratios, named_column='perc_change_stock_1year', ideal_cluster_size=ideal_clusters, path=NULL)
+# if(any(is.na(df_stocks_ratios)))
+# {
+#     stop('common size stock records contain NAs')
+# }
 
-cluster_plus_minus = 5
-num_clusters = 7#ideal_clusters
-hierarchical_results = hierarchical_cluster_analysis(data_frame=df_stocks_ratios, merge_column='perc_change_stock_1year', 
-	num_clusters=num_clusters, plus_minus=cluster_plus_minus)
-mstd = hierarchical_get_clusters_mean_st_dev(hierarchical_results=hierarchical_results)
-best_cluster_index_norm = which(mstd == min(mstd))
-df_stocks_ratios_clusters = hierarchical_merge_cluster_data(original_data_frame=df_stocks_ratios, 
-	merge_column='perc_change_stock_1year', num_clusters=num_clusters, plus_minus=cluster_plus_minus)
+# ideal_clusters = get_ideal_number_of_clusters(data_frame=df_stocks_ratios, named_column='perc_change_stock_1year')
+# hierarchical_dendogram(data_frame=df_stocks_ratios, named_column='perc_change_stock_1year', ideal_cluster_size=ideal_clusters, path=NULL)
 
-hierarchical_heatmaps = save_hierarchical_heatmaps(hierarchical_results=hierarchical_results)
+# cluster_plus_minus = 5
+# num_clusters = 7#ideal_clusters
+# hierarchical_results = hierarchical_cluster_analysis(data_frame=df_stocks_ratios, merge_column='perc_change_stock_1year', 
+# 	num_clusters=num_clusters, plus_minus=cluster_plus_minus)
+# mstd = hierarchical_get_clusters_mean_st_dev(hierarchical_results=hierarchical_results)
+# best_cluster_index_norm = which(mstd == min(mstd))
+# df_stocks_ratios_clusters = hierarchical_merge_cluster_data(original_data_frame=df_stocks_ratios, 
+# 	merge_column='perc_change_stock_1year', num_clusters=num_clusters, plus_minus=cluster_plus_minus)
 
-hierarchical_heatmaps[[1]]
-df_stocks_ratios_clusters %>% group_by(cluster_2) %>% summarize(count = n(), median_stock_change=median(perc_change_stock_1year), standard_dev_stock_change=sd(perc_change_stock_1year))
-hierarchical_heatmaps[[2]]
-df_stocks_ratios_clusters %>% group_by(cluster_3) %>% summarize(count = n(), median_stock_change=median(perc_change_stock_1year), standard_dev_stock_change=sd(perc_change_stock_1year))
-hierarchical_heatmaps[[3]]
-df_stocks_ratios_clusters %>% group_by(cluster_4) %>% summarize(count = n(), median_stock_change=median(perc_change_stock_1year), standard_dev_stock_change=sd(perc_change_stock_1year))
-hierarchical_heatmaps[[4]]
-df_stocks_ratios_clusters %>% group_by(cluster_5) %>% summarize(count = n(), median_stock_change=median(perc_change_stock_1year), standard_dev_stock_change=sd(perc_change_stock_1year))
-hierarchical_heatmaps[[5]]
-df_stocks_ratios_clusters %>% group_by(cluster_6) %>% summarize(count = n(), median_stock_change=median(perc_change_stock_1year), standard_dev_stock_change=sd(perc_change_stock_1year))
-hierarchical_heatmaps[[6]]
-df_stocks_ratios_clusters %>% group_by(cluster_7) %>% summarize(count = n(), median_stock_change=median(perc_change_stock_1year), standard_dev_stock_change=sd(perc_change_stock_1year))
-hierarchical_heatmaps[[7]]
-df_stocks_ratios_clusters %>% group_by(cluster_8) %>% summarize(count = n(), median_stock_change=median(perc_change_stock_1year), standard_dev_stock_change=sd(perc_change_stock_1year))
-hierarchical_heatmaps[[8]]
-df_stocks_ratios_clusters %>% group_by(cluster_9) %>% summarize(count = n(), median_stock_change=median(perc_change_stock_1year), standard_dev_stock_change=sd(perc_change_stock_1year))
-hierarchical_heatmaps[[9]]
-df_stocks_ratios_clusters %>% group_by(cluster_10) %>% summarize(count = n(), median_stock_change=median(perc_change_stock_1year), standard_dev_stock_change=sd(perc_change_stock_1year))
-hierarchical_heatmaps[[10]]
-df_stocks_ratios_clusters %>% group_by(cluster_11) %>% summarize(count = n(), median_stock_change=median(perc_change_stock_1year), standard_dev_stock_change=sd(perc_change_stock_1year))
-hierarchical_heatmaps[[11]]
-df_stocks_common_size_clusters %>% group_by(cluster_12) %>% summarize(count = n(), median_stock_change=median(perc_change_stock_1year), standard_dev_stock_change=sd(perc_change_stock_1year))
+# hierarchical_heatmaps = save_hierarchical_heatmaps(hierarchical_results=hierarchical_results)
+
+# hierarchical_heatmaps[[1]]
+# df_stocks_ratios_clusters %>% group_by(cluster_2) %>% summarize(count = n(), median_stock_change=median(perc_change_stock_1year), standard_dev_stock_change=sd(perc_change_stock_1year))
+# hierarchical_heatmaps[[2]]
+# df_stocks_ratios_clusters %>% group_by(cluster_3) %>% summarize(count = n(), median_stock_change=median(perc_change_stock_1year), standard_dev_stock_change=sd(perc_change_stock_1year))
+# hierarchical_heatmaps[[3]]
+# df_stocks_ratios_clusters %>% group_by(cluster_4) %>% summarize(count = n(), median_stock_change=median(perc_change_stock_1year), standard_dev_stock_change=sd(perc_change_stock_1year))
+# hierarchical_heatmaps[[4]]
+# df_stocks_ratios_clusters %>% group_by(cluster_5) %>% summarize(count = n(), median_stock_change=median(perc_change_stock_1year), standard_dev_stock_change=sd(perc_change_stock_1year))
+# hierarchical_heatmaps[[5]]
+# df_stocks_ratios_clusters %>% group_by(cluster_6) %>% summarize(count = n(), median_stock_change=median(perc_change_stock_1year), standard_dev_stock_change=sd(perc_change_stock_1year))
+# hierarchical_heatmaps[[6]]
+# df_stocks_ratios_clusters %>% group_by(cluster_7) %>% summarize(count = n(), median_stock_change=median(perc_change_stock_1year), standard_dev_stock_change=sd(perc_change_stock_1year))
+# hierarchical_heatmaps[[7]]
+# df_stocks_ratios_clusters %>% group_by(cluster_8) %>% summarize(count = n(), median_stock_change=median(perc_change_stock_1year), standard_dev_stock_change=sd(perc_change_stock_1year))
+# hierarchical_heatmaps[[8]]
+# df_stocks_ratios_clusters %>% group_by(cluster_9) %>% summarize(count = n(), median_stock_change=median(perc_change_stock_1year), standard_dev_stock_change=sd(perc_change_stock_1year))
+# hierarchical_heatmaps[[9]]
+# df_stocks_ratios_clusters %>% group_by(cluster_10) %>% summarize(count = n(), median_stock_change=median(perc_change_stock_1year), standard_dev_stock_change=sd(perc_change_stock_1year))
+# hierarchical_heatmaps[[10]]
+# df_stocks_ratios_clusters %>% group_by(cluster_11) %>% summarize(count = n(), median_stock_change=median(perc_change_stock_1year), standard_dev_stock_change=sd(perc_change_stock_1year))
+# hierarchical_heatmaps[[11]]
+# df_stocks_common_size_clusters %>% group_by(cluster_12) %>% summarize(count = n(), median_stock_change=median(perc_change_stock_1year), standard_dev_stock_change=sd(perc_change_stock_1year))
 
 ```
 
