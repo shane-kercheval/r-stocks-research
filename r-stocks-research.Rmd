@@ -133,23 +133,45 @@ partitions <- list(1:100, 101:200, 201:300, 301:400, 401:500, 501:600, 601:700, 
 if(pull_data)
 {
 	download_save_data(partitions = partitions, all_symbols = all_symbols, acwi_closing = acwi_closing)
+	number_of_partitions <- length(partitions)
+	financial_column_names <- readRDS(file = './Data/financial_column_names.RDS') # saveRDS(colnames(final_dataset), file = './data/financial_column_names.RDS')
+	df_stocks_raw <- load_raw_stocks(number_of_partitions = number_of_partitions, financial_column_names = financial_column_names)
+
+	saveRDS(df_stocks_raw, './data/df_stocks_raw.RDS')
+}else
+{
+	df_stocks_raw <- readRDS('./data/df_stocks_raw.RDS')
 }
-number_of_partitions <- length(partitions)
-financial_column_names <- readRDS(file = './Data/financial_column_names.RDS') # saveRDS(colnames(final_dataset), file = './data/financial_column_names.RDS')
-df_stocks_raw <- load_raw_stocks(number_of_partitions = number_of_partitions, financial_column_names = financial_column_names)
 ```
 
 ## Check Data Integrity
 
 ```{r data_integrety, echo=FALSE}
-df_stocks_raw
+df_temp <- df_stocks_raw %>% filter(symbol == 'A')
+
+if(nrow(df_temp) < 3)
+{
+    stop('not enough A symbols')
+}
+if(!all(month(df_temp$date) == 10) || !all(day(df_temp$date) == 31))
+{
+    stop('incorrect dates')
+}
+if(!(((df_temp$stock_close_moving_avg[1] - df_temp$stock_close_moving_avg[2]) / df_temp$stock_close_moving_avg[2]) == df_temp$perc_change_stock_1year[2]))
+{
+    stop('incorrect perc_change_stock_1year (2)')
+}
+if(!(((df_temp$stock_close_moving_avg[2] - df_temp$stock_close_moving_avg[3]) / df_temp$stock_close_moving_avg[3]) == df_temp$perc_change_stock_1year[3]))
+{
+    stop('incorrect perc_change_stock_1year (3)')
+}
 ```
 
 ## 'Cleaning' Stocks
 
 ```{r clean_add_ratios, echo=FALSE, message=FALSE, warning=FALSE, comment='', results='asis'}
-df_stocks_full = stock_financials_clean(df_stocks_raw)
-df_stocks_full = stock_financials_ratios(df_stocks_full)
+df_stocks_full <- stock_financials_clean(df_stocks_raw)
+df_stocks_full <- stock_financials_ratios(df_stocks_full)
 
 cat(paste0('> `', length(unique(df_stocks_full$symbol)), '` unique stocks.\n\n'))
 ```
@@ -157,8 +179,21 @@ cat(paste0('> `', length(unique(df_stocks_full$symbol)), '` unique stocks.\n\n')
 ## Column Names:
 
 ```{r column_names, comment=NA}
-column_names = colnames(df_stocks_full)
+column_names <- colnames(df_stocks_full)
 kable(data_frame(num=(1:length(column_names)), colname_names=column_names))
+```
+
+## Creating Trend Dataset
+```{r}
+if(pull_data)
+{
+	df_stocks_trend <- build_stock_trend_dataset(df_stocks_full = df_stocks_full)
+
+	saveRDS(df_stocks_trend, './data/df_stocks_trend.RDS')
+}else
+{
+	df_stocks_trend <- readRDS('./data/df_stocks_trend.RDS')
+}
 ```
 
 ## Data Summary:
@@ -167,6 +202,8 @@ kable(data_frame(num=(1:length(column_names)), colname_names=column_names))
 
 ```{r summmary, comment=NA}
 summary(df_stocks_full)
+cat('\n\n')
+summary(df_stocks_trend)
 ```
 
 # Exploring Data
@@ -180,11 +217,6 @@ kable(get_correlations(df_stocks_full, corr_threshold = 0.7, p_value_threshold =
 > The high correlations among absolute data (as opposed to ratios) suggests that using ratios might yield better or more valid results in models where multi-collinearity causes problems.
 >
 > Rather than removing all of these columns, I will keep them in for now (with the exception of Revenue which will be removed (TotalRevenue will remain)), and extract the columns I want to work with for particular models.
-
-
-```{r remove_collinearity, echo=FALSE}
-df_stocks_full = df_stocks_full %>% select(-Revenue) # Revenue is 100% correlated to TotalRevenue
-```
 
 ## Correlation, Maximal Information Coefficient
 
@@ -200,13 +232,13 @@ df_stocks_full = df_stocks_full %>% select(-Revenue) # Revenue is 100% correlate
 
 > Overall, the low/negative correlations suggests that my original plan of using a form of linear regression will probably not result in any significant results. 
 
-```{r maximal_information_coefficient, echo=FALSE, fig.height=15, fig.width=10, cached=TRUE}
+```{r maximal_information_coefficient, echo=FALSE, fig.height=15, fig.width=10, message=FALSE, cached=TRUE}
 if(pull_data)
 {
 	x <- df_stocks_full %>%
 		select(-date, -symbol, -perc_change_stock_1year, -diff_above_index_1year, -dplyr::contains('ratioh_')) # get rid of `ratioh` because we only want numeric columns
 	y <- df_stocks_full %>%
-		select(perc_change_stock_1year)
+		select(diff_above_index_1year)
 
 	correlations_with_perc_change <- cor(x, y=y, use='complete.obs')
 
@@ -216,14 +248,13 @@ if(pull_data)
 
 	# original implementation found http://menugget.blogspot.de/2014/09/maximal-information-coefficient-part-ii.html
 	library(minerva)
-	minerva_results <- mine(x, y = y$perc_change_stock_1year, alpha = 0.7)
+	minerva_results <- mine(x, y = y$diff_above_index_1year, alpha = 0.7)
 	res <- data.frame(variable = rownames(minerva_results$MIC), MIC = c(minerva_results$MIC))# %>%
 	res <- res %>% mutate(MIC_rank = dense_rank(desc(MIC))) %>% arrange(MIC_rank)
 	final_correlations = inner_join(res, df_correlations, by = 'variable')
 
 	saveRDS(final_correlations, './data/maximal_information_coefficient_correlations.RDS')
-}
-else
+}else
 {
 	final_correlations <- readRDS('./data/maximal_information_coefficient_correlations.RDS')
 }
@@ -251,135 +282,118 @@ df_top_variables <- final_correlations %>%
 
 ## Looking at Data 
 
-- Looking at variables against `perc_change_stock_1year`
+- Looking at variables against `diff_above_index_1year`
 
 ### Variables with High MIC
 
 ```{r mic_graphs, echo=FALSE}
 walk(df_top_variables$variable, ~{
-    column_name = .
-    temp_data <- data.frame(x_variable = df_stocks_full[, column_name], perc_change_stock_1year = df_stocks_full$perc_change_stock_1year)
-    
-    x_zoom_max <- quantile(temp_data$x_variable,  probs = c(0.90))
-    x_zoom_min <- quantile(temp_data$x_variable,  probs = c(0.10))
-	
-    print(ggplot(data = temp_data, mapping = aes(x = x_variable, y = perc_change_stock_1year)) +
-	    geom_point(alpha=0.2) + 
-        coord_cartesian(ylim = c(-1, 2), xlim = c(x_zoom_min, x_zoom_max)) +
-        xlab(column_name))
+	column_name <- .
+	temp_data <- data.frame(x_variable = df_stocks_full[, column_name], diff_above_index_1year = df_stocks_full$diff_above_index_1year)
+
+	x_zoom_max <- quantile(temp_data$x_variable,  probs = c(0.90))
+	x_zoom_min <- quantile(temp_data$x_variable,  probs = c(0.10))
+
+	print(ggplot(data = temp_data, mapping = aes(x = x_variable, y = diff_above_index_1year)) +
+		geom_point(alpha=0.2) + 
+		coord_cartesian(ylim = c(-1, 2), xlim = c(x_zoom_min, x_zoom_max)) +
+		xlab(column_name))
 })
 ```
 
 > No clear linear patterns found (visually), which is interesting.
 
-## Segmentation and Clustering
+### Trend Variables
 
-- Before we get into prediction, I'm wondering if there distinguishable segments that we could organic the stocks into, from which patterns (in the dependent variables) would would arise.
-- I'm going to try to leave the dependent variables out (e.g. `perc_change_stock_1year`) and then add them back in after clusting (because presumably if we would like to use clustering to aid in prediction, we would have to cluster on only the independent variables that we would have at the time of clustering/prediction).
+```{r trend_graphs, echo=FALSE}
+column_names <- colnames(df_stocks_trend %>% select(-date, -symbol))
 
-> I will be using hierarchical clustering, primarily because k-means clustering starts with a random choice of cluster center and, therefore, will most likely yield different results each time it is ran (with the same data). Hierarchical will most likely be more consistent.
->
-> I'll attempt to cluster on common size ratios as well as some of the more common ratios 
+walk(column_names, ~{
+	column_name <- .
+	temp_data <- data.frame(x_variable = df_stocks_trend[, column_name], diff_above_index_1year = df_stocks_trend$diff_above_index_1year)
 
-### Common Size Clustering
+	x_zoom_max <- quantile(temp_data$x_variable,  probs = c(0.90))
+	x_zoom_min <- quantile(temp_data$x_variable,  probs = c(0.10))
 
-- I'll start with all `cs_` columns, but I'll probably scale down and pick specific columns based on high MIC scorees and common sense
-
-```{r clustering_common_size, echo=FALSE}
-segmentation_dataset <- df_stocks_full %>% select(perc_change_stock_1year, diff_above_index_1year, dplyr::contains('cs_'))
-dataset_scaled <- scale(segmentation_dataset)# %>% dplyr::select(-perc_change_stock_1year, -diff_above_index_1year))
-
-if(pull_data)
-{
-	ideal_number_of_clusters <- pamk(dataset_scaled)$nc
-	distances <- dist(dataset_scaled, method = "euclidean")
-	clusters <- hclust(distances, method = "ward.D")
-
-	saveRDS(ideal_number_of_clusters, file='./data/ideal_number_of_clusters_common_size.RDS')
-	saveRDS(clusters, file='./data/clusters_common_size.RDS')
-}else
-{
-	ideal_number_of_clusters <- readRDS('./data/ideal_number_of_clusters_common_size.RDS')
-	clusters <- readRDS('./data/clusters_common_size.RDS')
-}
-
-cat(paste('> ideal number of clusters:', ideal_number_of_clusters, '\n\n'))
-
-all_cluster_groups <- map(2:5, ~ 
-{
-	number_of_clusters <- .
-	clusterGroups <- cutree(clusters, k = number_of_clusters) # assigns a cluster group to each index
-	cluster_splits <- split(as.data.frame(dataset_scaled), clusterGroups) # this adds back in is_stage_9_paying
-
-	results_df <- lapply(cluster_splits, colMeans) # command will output the cluster centroids for all clusters:
-	results_df <- do.call(cbind, lapply(results_df, data.frame, stringsAsFactors=FALSE))
-
-	results_df <- as.data.frame(t(results_df)) # t (transpose) results in a matrix, convert back to df
-	results_df$cluster_name <- 1:nrow(results_df)
-	
-	print(cluster_heatmap(results_df = results_df))
-
-	cluster_summary <- segmentation_dataset %>%
-		mutate(cluster = clusterGroups) %>%
-		dplyr::group_by(cluster) %>%
-		dplyr::summarise(n = n(),
-			perc_change_mean = mean(perc_change_stock_1year),
-			perc_change_sd = sd(perc_change_stock_1year),
-			diff_above_index_mean = mean(diff_above_index_1year),
-			diff_above_index_sd = sd(diff_above_index_1year))
-
-	print(kable(cluster_summary))
-
-	return(clusterGroups)
+	print(ggplot(data = temp_data, mapping = aes(x = x_variable, y = diff_above_index_1year)) +
+		geom_point(alpha=0.2) + 
+		coord_cartesian(ylim = c(-1, 2), xlim = c(x_zoom_min, x_zoom_max)) +
+		xlab(column_name))
 })
 ```
 
-```{r clustering_top_variables, echo=FALSE}
-segmentation_dataset <- df_stocks_full[ , c('perc_change_stock_1year', 'diff_above_index_1year', df_top_variables$variable)]
-dataset_scaled <- scale(segmentation_dataset)# %>% dplyr::select(-perc_change_stock_1year, -diff_above_index_1year))
+> No clear linear patterns found (visually), which is interesting.
 
-if(pull_data)
-{
-	ideal_number_of_clusters <- pamk(dataset_scaled)$nc
-	distances <- dist(dataset_scaled, method = "euclidean")
-	clusters <- hclust(distances, method = "ward.D")
+# Clustering
 
-	saveRDS(ideal_number_of_clusters, file='./data/ideal_number_of_clusters_top_variables.RDS')
-	saveRDS(clusters, file='./data/clusters_top_variables.RDS')
-}else
-{
-	ideal_number_of_clusters <- readRDS('./data/ideal_number_of_clusters_top_variables.RDS')
-	clusters <- readRDS('./data/clusters_top_variables.RDS')
-}
+- Before we get into prediction, I'm wondering if there distinguishable segments that we could organic the stocks into, from which patterns (in the dependent variables) would would arise.
+- I'm going to try to leave the dependent variables out (e.g. `diff_above_index_1year`) and then add them back in after clusting (because presumably if we would like to use clustering to aid in prediction, we would have to cluster on only the independent variables that we would have at the time of clustering/prediction).
 
-cat(paste('> ideal number of clusters:', ideal_number_of_clusters, '\n\n'))
+> I will be using hierarchical clustering, primarily because k-means clustering starts with a random choice of cluster center and, therefore, will most likely yield different results each time it is ran (with the same data). Hierarchical will most likely be more consistent.
 
-all_cluster_groups <- map(2:5, ~ 
-{
-	number_of_clusters <- .
-	clusterGroups <- cutree(clusters, k = number_of_clusters) # assigns a cluster group to each index
-	cluster_splits <- split(as.data.frame(dataset_scaled), clusterGroups) # this adds back in is_stage_9_paying
+```{r segmentation, echo=FALSE}
+df_seg_common_size <- df_stocks_full %>% select(perc_change_stock_1year, diff_above_index_1year, dplyr::contains('cs_'))
+df_seg_top_variables <- df_stocks_full[ , c('perc_change_stock_1year', 'diff_above_index_1year', df_top_variables$variable)]
+df_seg_trend <- df_stocks_trend %>% dplyr::select(-date, -symbol)
 
-	results_df <- lapply(cluster_splits, colMeans) # command will output the cluster centroids for all clusters:
-	results_df <- do.call(cbind, lapply(results_df, data.frame, stringsAsFactors=FALSE))
+segmentation_list <- list(df_seg_common_size, df_seg_top_variables, df_seg_trend)
+segmentation_RDSs <- list('common size', 'top variables', 'trend')
 
-	results_df <- as.data.frame(t(results_df)) # t (transpose) results in a matrix, convert back to df
-	results_df$cluster_name <- 1:nrow(results_df)
-	
-	print(cluster_heatmap(results_df = results_df))
+walk2(segmentation_list, segmentation_RDSs, ~ {
 
-	cluster_summary <- segmentation_dataset %>%
-		mutate(cluster = clusterGroups) %>%
-		dplyr::group_by(cluster) %>%
-		dplyr::summarise(n = n(),
-			perc_change_mean = mean(perc_change_stock_1year),
-			perc_change_sd = sd(perc_change_stock_1year),
-			diff_above_index_mean = mean(diff_above_index_1year),
-			diff_above_index_sd = sd(diff_above_index_1year))
+	segmentation_name <- .y
+	segmentation_file_name <- str_replace(segmentation_name, ' ', '_')
+	ideal_number_of_clusters_file <- paste0('./data/segmentation_ideal_number_of_clusters_', segmentation_file_name,'.RDS')
+	clusters_file_name <- paste0('./data/segmentation_clusters_', segmentation_file_name,'.RDS')
 
-	print(kable(cluster_summary))
+	cat(paste('\n\n## Clustering -', segmentation_name, '\n\n'))
 
-	return(clusterGroups)
+	segmentation_dataset <- .x
+	dataset_scaled <- scale(segmentation_dataset)
+
+	if(pull_data)
+	{
+		ideal_number_of_clusters <- pamk(dataset_scaled)$nc
+		distances <- dist(dataset_scaled, method = "euclidean")
+		clusters <- hclust(distances, method = "ward.D")
+
+		saveRDS(ideal_number_of_clusters, file = ideal_number_of_clusters_file)
+		saveRDS(clusters, file = clusters_file_name)
+	}else
+	{
+		ideal_number_of_clusters <- readRDS(ideal_number_of_clusters_file)
+		clusters <- readRDS(clusters_file_name)
+	}
+
+	cat(paste('> ideal number of clusters:', ideal_number_of_clusters, '\n\n'))
+
+	all_cluster_groups <- map(2:5, ~ 
+	{
+		number_of_clusters <- .
+		clusterGroups <- cutree(clusters, k = number_of_clusters) # assigns a cluster group to each index
+		cluster_splits <- split(as.data.frame(dataset_scaled), clusterGroups) # this adds back in is_stage_9_paying
+
+		results_df <- lapply(cluster_splits, colMeans) # command will output the cluster centroids for all clusters:
+		results_df <- do.call(cbind, lapply(results_df, data.frame, stringsAsFactors=FALSE))
+
+		results_df <- as.data.frame(t(results_df)) # t (transpose) results in a matrix, convert back to df
+		results_df$cluster_name <- 1:nrow(results_df)
+		
+		print(cluster_heatmap(results_df = results_df))
+
+		cluster_summary <- segmentation_dataset %>%
+			mutate(cluster = clusterGroups) %>%
+			dplyr::group_by(cluster) %>%
+			dplyr::summarise(n = n(),
+				perc_change_mean = mean(perc_change_stock_1year),
+				perc_change_sd = sd(perc_change_stock_1year),
+				diff_above_index_mean = mean(diff_above_index_1year),
+				diff_above_index_sd = sd(diff_above_index_1year))
+
+		print(kable(cluster_summary))
+
+		return(clusterGroups)
+	})
 })
 ```
 
@@ -390,37 +404,37 @@ all_cluster_groups <- map(2:5, ~
 # Sandbox / TODO
 
 ```{r sandbox}
-ggplot(data = df_stocks_full, mapping = aes(x = DividendsperShareCommonStockPrimaryIssue, y = perc_change_stock_1year)) +
+ggplot(data = df_stocks_full, mapping = aes(x = DividendsperShareCommonStockPrimaryIssue, y = diff_above_index_1year)) +
 	geom_point(alpha=0.2)
 
-ggplot(data = df_stocks_full, mapping = aes(x = ratios_quick_ratio, y = perc_change_stock_1year)) +
+ggplot(data = df_stocks_full, mapping = aes(x = ratios_quick_ratio, y = diff_above_index_1year)) +
 	geom_point(alpha=0.2)
 
-ggplot(data = df_stocks_full, mapping = aes(x = TotalRevenue, y = perc_change_stock_1year)) +
+ggplot(data = df_stocks_full, mapping = aes(x = TotalRevenue, y = diff_above_index_1year)) +
 	geom_point(alpha=0.2)
 
-# makes sense that revenue isn't necessarily correlated with perc_change_stock_1year becuase revenue doesn't guarantee success or profit
+# makes sense that revenue isn't necessarily correlated with diff_above_index_1year becuase revenue doesn't guarantee success or profit
 
 ggplot(data = df_stocks_full) +
-	geom_hex(mapping = aes(x = TotalRevenue, y = perc_change_stock_1year))
+	geom_hex(mapping = aes(x = TotalRevenue, y = diff_above_index_1year))
 
-ggplot(data = df_stocks_full, aes(perc_change_stock_1year)) +
+ggplot(data = df_stocks_full, aes(diff_above_index_1year)) +
 	geom_freqpoly(bins = 15)
 
 # perhaps clustering data will help, since 
 
-ggplot(data = df_stocks_full, mapping = aes(x = net_profit_margin, y = perc_change_stock_1year)) +
+ggplot(data = df_stocks_full, mapping = aes(x = net_profit_margin, y = diff_above_index_1year)) +
 	geom_point(alpha=0.2)
 
-# makes sense that revenue isn't necessarily correlated with perc_change_stock_1year becuase revenue doesn't guarantee success or profit
+# makes sense that revenue isn't necessarily correlated with diff_above_index_1year becuase revenue doesn't guarantee success or profit
 
 ggplot(data = df_stocks_full) +
-	geom_hex(mapping = aes(x = net_profit_margin, y = perc_change_stock_1year))
+	geom_hex(mapping = aes(x = net_profit_margin, y = diff_above_index_1year))
 
 ggplot(data = df_stocks_full, aes(net_profit_margin)) +
 	geom_freqpoly(bins = 15)
 
-# interesting that net profit margin doesn't appear to have any significance in determining perc_change_stock_1year. I would have expected a somewhat linear relationship
+# interesting that net profit margin doesn't appear to have any significance in determining diff_above_index_1year. I would have expected a somewhat linear relationship
 ```
 
 # Datasets
@@ -435,8 +449,11 @@ stocks_ratios_diff_above_index <- df_stocks_full %>% dplyr::select(diff_above_in
 stocks_top_variables_perc_change <- df_stocks_full[, c('perc_change_stock_1year', df_top_variables$variables)]
 stocks_top_variables_diff_above_index <- df_stocks_full[, c('diff_above_index_1year', df_top_variables$variables)]
 
-stocks_all_perc_change <- df_stocks_full %>% dplyr::select(-diff_above_index_1year)
-stocks_all_diff_above_index <- df_stocks_full %>% dplyr::select(-perc_change_stock_1year)
+stocks_all_perc_change <- df_stocks_full %>% dplyr::select(-date, -symbol, -diff_above_index_1year)
+stocks_all_diff_above_index <- df_stocks_full %>% dplyr::select(-date, -symbol, -perc_change_stock_1year)
+
+stocks_trend_perc_change <- df_stocks_trend %>% dplyr::select(-date, -symbol, -diff_above_index_1year)
+stocks_trend_diff_above_index <- df_stocks_trend %>% dplyr::select(-date, -symbol, -perc_change_stock_1year)
 
 df_stocks_datasets <- list(stocks_common_size_perc_change, stocks_common_size_diff_above_index, stocks_ratios_perc_change,
 	stocks_ratios_diff_above_index, stocks_top_variables_perc_change, stocks_top_variables_diff_above_index, stocks_all_perc_change,
@@ -520,20 +537,19 @@ asdf <- map(df_stocks_datasets, ~ {
 	# Stochastic Gradient Boosting (Generalized Boosted Modeling)
 	set.seed(seed)
 	fit.gbm <- train(target_variable ~ ., data=spot_check_dataset, method='gbm', metric=metric, preProc=impute_pre_process, trControl=control, verbose=FALSE)
-	
-	return (list(
 
-	lda = fit.lda, 
-	logistic = fit.glm, 
-	glmnet = fit.glmnet, 
-	svm = fit.svmRadial, 
-	knn = fit.knn, 
-	nb = fit.nb,
-	cart = fit.cart, 
-	c50 = fit.c50, 
-	bagging = fit.treebag, 
-	rf = fit.rf, 
-	gbm = fit.gbm))
+	return (list(
+		lda = fit.lda, 
+		logistic = fit.glm, 
+		glmnet = fit.glmnet, 
+		svm = fit.svmRadial, 
+		knn = fit.knn, 
+		nb = fit.nb,
+		cart = fit.cart, 
+		c50 = fit.c50, 
+		bagging = fit.treebag, 
+		rf = fit.rf, 
+		gbm = fit.gbm))
 
 })
 

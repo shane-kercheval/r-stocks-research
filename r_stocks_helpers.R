@@ -275,7 +275,7 @@ stock_financials_clean <- function(df_stocks, missing_data_threshold = 0.125)
 	df_stocks <- df_stocks %>%
 		select(-InterestExpenseIncomeNetOperating, -AccountingChange, -DiscontinuedOperations, -ExtraordinaryItem, -PreferredDividends, -BasicWeightedAverageShares, -BasicEPSExcludingExtraordinaryItems, -BasicEPSIncludingExtraordinaryItems, -DilutedEPSIncludingExtraordinaryItems, -GrossDividendsCommonStock, -NetIncomeafterStockBasedCompExpense, -BasicEPSafterStockBasedCompExpense, -DilutedEPSafterStockBasedCompExpense, -DepreciationSupplemental, -TotalSpecialItems, -NormalizedIncomeBeforeTaxes, -EffectofSpecialItemsonIncomeTaxes, -IncomeTaxesExImpactofSpecialItems, -NormalizedIncomeAfterTaxes, -NormalizedIncomeAvailtoCommon, -BasicNormalizedEPS, -ReceivablesOther, -SharesOutsCommonStockPrimaryIssue) %>% # Variables that seem to have all observations missing
 		select(-DepreciationAmortization, -InterestIncomeExpenseNetNonOperating, -GainLossonSaleofAssets, -MinorityInterestx, -EquityInAffiliates, -DilutionAdjustment, -MinorityInteresty) %>% # now remove variables that are very unlikely to contribute to model, and more likely to create noise (simpler models are often better)
-		select(-OtherRevenueTotal, -OtherNet, -OtherOperatingExpensesTotal, -ShortTermInvestments, -LongTermInvestments, -CurrentPortofLTDebtCapitalLeases, -CapitalLeaseObligations, -DeferredIncomeTax, -TreasuryStockCommon, -OtherEquityTotal, -Amortization, -IssuanceRetirementofStockNet, -IssuanceRetirementofDebtNet, -ForeignExchangeEffects) # second round
+		select(-Revenue, -OtherRevenueTotal, -OtherNet, -OtherOperatingExpensesTotal, -ShortTermInvestments, -LongTermInvestments, -CurrentPortofLTDebtCapitalLeases, -CapitalLeaseObligations, -DeferredIncomeTax, -TreasuryStockCommon, -OtherEquityTotal, -Amortization, -IssuanceRetirementofStockNet, -IssuanceRetirementofDebtNet, -ForeignExchangeEffects) # second round
 
 	cat('Removing variables that have mostly a) missing variables, b) variables that are very unlikely to contribute to model and more likely to create noise, and c) are duplicated and/or very highly correlated to other variables:\n\n')
 	cat(paste('>', paste(column_names[!(column_names %in% colnames(df_stocks))], collapse = ', ')))
@@ -420,9 +420,12 @@ stock_financials_ratios <- function(df_stocks)
 #######################################################################################################################################
 # builds a dataset that converts each column to trend information (i.e. weighted average of percent change over a 3-year period for IS, BS, CF, common-size, and ratios)
 #######################################################################################################################################
-build_stock_trend_dataset <- function(df_stocks_full, unique_cleaned_stocks)
+build_stock_trend_dataset <- function(df_stocks_full)
 {
-	stocks_trend_list <- map(unique_cleaned_stocks, ~
+    starter_columns <- c('date', 'symbol', 'perc_change_stock_1year', 'diff_above_index_1year', 'TotalRevenue')
+    
+	unique_stocks <- sort(unique(df_stocks_full$symbol))
+	stocks_trend_list <- map(unique_stocks, ~
 	{
 		stock_symbol <- .
 		df_stocks_sub <- df_stocks_full %>% filter(symbol == stock_symbol) %>% arrange(desc(date)) # used cleaned list
@@ -438,7 +441,6 @@ build_stock_trend_dataset <- function(df_stocks_full, unique_cleaned_stocks)
 		# The latest financial statement included in this group will already have the 35 stocks already have the perc_change_stock_1year field set from the `download_save_data` function. So by defition, this field will be our target variable (i.e. we want to predict, based on past 3 years, whether or not (or by how much) the stock will beat (or not) the comparison index)
 		# NOTE we want to keep a couple of variables/columns that are absolue (like TotalRevenue, because it could turn out that larger companies tend to outputform index, for example, so we don't want to rely exclusively on trends)
 		column_names <- colnames(df_stocks_sub)
-		starter_columns <- c('date', 'symbol', 'TotalRevenue', 'perc_change_stock_1year', 'diff_above_index_1year')
 		df_trend <- df_stocks_sub[1, starter_columns] # first element is latest
 		column_names <- column_names[! (column_names %in% c(starter_columns))]
 		walk(column_names, ~{
@@ -460,13 +462,13 @@ build_stock_trend_dataset <- function(df_stocks_full, unique_cleaned_stocks)
 
 		return (df_trend)
 	})
-	df_stocks_trend <- ldply(stocks_trend_list, data.frame) # convert list of dataframes to dataframe
+	df_stocks_trend <- plyr::ldply(stocks_trend_list, data.frame) # convert list of dataframes to dataframe
 
 	# we have a lot of divide by zero INFs etc., remove these columns, most of them have too much missing to be useful.
 	indexes <- which(map_lgl(c(1:ncol(df_stocks_trend)), ~{
 		return (all(is.finite(df_stocks_trend[,.])))
 	}))
-	indexes <- c(indexes, 2, 3) # is.finite is false for strings
+	indexes <- c(indexes, seq(1,length(starter_columns))) # is.finite is false for strings
 	indexes <- sort(unique(indexes))
 	df_stocks_trend <- df_stocks_trend[, indexes]
 
