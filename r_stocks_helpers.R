@@ -2,6 +2,7 @@ library(lubridate)
 library(quantmod)
 library(DataCombine)
 library(dtplyr)
+library(DMwR)
 
 #######################################################
 # helper function to download stock information via quantmod API
@@ -30,7 +31,6 @@ get_prices <- function(symbol, should_add_perc_info=TRUE, src = 'yahoo')
 	stock_prices$date <- ymd(stock_prices$date)
 	if(should_add_perc_info)
 	{
-		# remember, that these prices are shifted by 3 days in the add_perc_info function (so if I specify 12/1, I actually get 12/4. See function for reasons and explanation)
 		stock_prices <- add_perc_info(stock_prices) # add percent change information (90-day & 1-year change from the date in the row)
 	}
 
@@ -41,26 +41,26 @@ get_prices <- function(symbol, should_add_perc_info=TRUE, src = 'yahoo')
 # takes a datafame that has a `date` and `close` columns.
 # Adds columns that show the percent change in stock prices (from the date of the financial statement associated with the dataset record) and a year from that date
 #######################################################
-add_perc_info <- function(stock_dataset)
+add_perc_info <- function(stock_dataset, moving_average = 50)
 {
 	dataset_all_dates <- data_frame(date = seq(ymd(min(stock_dataset$date)), ymd(max(stock_dataset$date)), by = 'days')) %>%
-	    left_join(stock_dataset, by = 'date') %>%
-	    arrange(date) # needs to be arranged by date (ascending) so that we can fill in weekends/holidays with previous close date via na.locf
+		left_join(stock_dataset, by = 'date') %>%
+		arrange(date) # needs to be arranged by date (ascending) so that we can fill in weekends/holidays with previous close date via na.locf
 	
 	if(is.na(dataset_all_dates$close[1]))
 	{
-	    dataset_all_dates <- dataset_all_dates[min(which(!is.na(dataset_all_dates$close))):nrow(dataset_all_dates), ]
+		dataset_all_dates <- dataset_all_dates[min(which(!is.na(dataset_all_dates$close))):nrow(dataset_all_dates), ]
 	}
 	dataset_all_dates$close <- na.locf(dataset_all_dates$close) # we need to fill in the weekends; we'll use the values from the previous day (i.e. Friday's will fill in weekends, previous day will fill in holidays). We need to do this in order to later join tables on dates, search for dates, etc., without having to worry about missing dates. I can't think of any major downsides to this approach.
 
 	temp <- dataset_all_dates %>%
-	    mutate(date = date - years(1)) %>% # now we need to create a lag for 1 year, such that we will have a dataset where, if we look up a particular date, we can see the closing date of that day, and what the closing date WILL BE 1 year from now
-	    rename(close_lag_year = close)
+		mutate(date = date - years(1)) %>% # now we need to create a lag for 1 year, such that we will have a dataset where, if we look up a particular date, we can see the closing date of that day, and what the closing date WILL BE 1 year from now
+		rename(close_lag_year = close)
 	temp <- temp[complete.cases(temp), ] # there will be NAs created for leap years
 	
 	dataset_all_dates <- dataset_all_dates %>% 
-	    left_join(temp, by = 'date') %>%
-	    arrange(desc(date)) # needs to be arranged DESC by date, because we need to us na.locf to fill leap years for close_lag_year, but we want to ignore first NAs for year lag.
+		left_join(temp, by = 'date') %>%
+		arrange(desc(date)) # needs to be arranged DESC by date, because we need to us na.locf to fill leap years for close_lag_year, but we want to ignore first NAs for year lag.
 	
 	# fill in values for leap year NAs while ignoring NAs created by lag
 	first_non_lag <- min(which(!is.na(dataset_all_dates$close_lag_year)))
@@ -68,7 +68,6 @@ add_perc_info <- function(stock_dataset)
 	dataset_all_dates$close_lag_year[first_non_lag:dataset_length] <- na.locf(dataset_all_dates$close_lag_year[first_non_lag:dataset_length])
 	
 	#### if we choose a random day, it seems like this is subject to short/term spikes/dips.. what if we chose xx day moving average to smooth out trend.
-	moving_average <- 50
 	dataset_all_dates$close_moving_ave <- rev(as.numeric(SMA(xts(dataset_all_dates$close, order.by = dataset_all_dates$date), moving_average)))
 	# SMA doesn't handle NAs in leading values, so..
 	indexes <- which(!is.na(dataset_all_dates$close_lag_year))
@@ -216,7 +215,7 @@ load_raw_stocks <- function(number_of_partitions, financial_column_names)
 			
 			if(is.null(df_stock_raw) || nrow(df_stock_raw) <= 1) # need more than 1 annual financial report in order to get future year's data to be able to predict on.
 			{
-			    return (NULL)
+				return (NULL)
 			}
 			
 			################
@@ -234,8 +233,8 @@ load_raw_stocks <- function(number_of_partitions, financial_column_names)
 			colnames(df_stock_raw) <- new_col_names
 
 			df_stock_raw <- df_stock_raw %>% mutate(net_profit_margin = NetIncome / TotalRevenue)
-			net_profit_margins = df_stock_raw$net_profit_margin
-			df_stock_raw$net_profit_margin_next_year = c(NA, net_profit_margins[1:(length(net_profit_margins) - 1)])
+			#net_profit_margins = df_stock_raw$net_profit_margin
+			#df_stock_raw$net_profit_margin_next_year = c(NA, net_profit_margins[1:(length(net_profit_margins) - 1)])
 			#df_stock_raw %>% select(date, NetIncome, TotalRevenue, net_profit_margin, net_profit_margin_next_year, perc_change_stock_1year)
 			################
 			# now we want to inspect the data and discard stocks that have missing or invalid data. Need to do this per stock.
@@ -266,22 +265,27 @@ load_raw_stocks <- function(number_of_partitions, financial_column_names)
 #######################################################################################################################################
 #### clean financial information by removing unused variables and cleaning up NAs, NaNs, etc.
 #######################################################################################################################################
-stock_financials_clean <- function(df_stocks)
+stock_financials_clean <- function(df_stocks, missing_data_threshold = 0.125)
 {
 	if(!all(df_stocks$period_type == 'annual'))
 	{
 		stop('not all period_types are annual')
 	}
-
+    column_names <- colnames(df_stocks)
 	df_stocks <- df_stocks %>%
 		select(-InterestExpenseIncomeNetOperating, -AccountingChange, -DiscontinuedOperations, -ExtraordinaryItem, -PreferredDividends, -BasicWeightedAverageShares, -BasicEPSExcludingExtraordinaryItems, -BasicEPSIncludingExtraordinaryItems, -DilutedEPSIncludingExtraordinaryItems, -GrossDividendsCommonStock, -NetIncomeafterStockBasedCompExpense, -BasicEPSafterStockBasedCompExpense, -DilutedEPSafterStockBasedCompExpense, -DepreciationSupplemental, -TotalSpecialItems, -NormalizedIncomeBeforeTaxes, -EffectofSpecialItemsonIncomeTaxes, -IncomeTaxesExImpactofSpecialItems, -NormalizedIncomeAfterTaxes, -NormalizedIncomeAvailtoCommon, -BasicNormalizedEPS, -ReceivablesOther, -SharesOutsCommonStockPrimaryIssue) %>% # Variables that seem to have all observations missing
 		select(-DepreciationAmortization, -InterestIncomeExpenseNetNonOperating, -GainLossonSaleofAssets, -MinorityInterestx, -EquityInAffiliates, -DilutionAdjustment, -MinorityInteresty) %>% # now remove variables that are very unlikely to contribute to model, and more likely to create noise (simpler models are often better)
 		select(-OtherRevenueTotal, -OtherNet, -OtherOperatingExpensesTotal, -ShortTermInvestments, -LongTermInvestments, -CurrentPortofLTDebtCapitalLeases, -CapitalLeaseObligations, -DeferredIncomeTax, -TreasuryStockCommon, -OtherEquityTotal, -Amortization, -IssuanceRetirementofStockNet, -IssuanceRetirementofDebtNet, -ForeignExchangeEffects) # second round
 
-	percent_data_filled <- map_dbl(1:nrow(df_stocks), ~ round(sum(apply(df_stocks[., ], 2, function(c) sum(is.na(c))))/ncol(df_stocks),2))
-	indexes_to_keep <- which(percent_data_filled < 0.10)
+	cat('Removing variables that have mostly a) missing variables, b) variables that are very unlikely to contribute to model and more likely to create noise, and c) are duplicated and/or very highly correlated to other variables:\n\n')
+	cat(paste('>', paste(column_names[!(column_names %in% colnames(df_stocks))], collapse = ', ')))
+	
+	percent_nas_per_symbol <- map_dbl(1:nrow(df_stocks), ~ round(sum(apply(df_stocks[., ], 2, function(c) sum(is.na(c))))/ncol(df_stocks),2))
+	indexes_to_keep <- which(percent_nas_per_symbol < missing_data_threshold)
+	total_number_of_stocks <- length(unique(df_stocks$symbol))
 	stock_symbols_to_keep <- unique(df_stocks[indexes_to_keep, ]$symbol)
-	df_stocks <- df_stocks %>% filter(symbol %in% stock_symbols_to_keep)
+	cat(paste0('\n\nRemoving `', total_number_of_stocks - length(stock_symbols_to_keep), '` symbols (out of `', total_number_of_stocks,'`, or ', percent( (total_number_of_stocks - length(stock_symbols_to_keep)) / total_number_of_stocks),') that have >= ', percent(missing_data_threshold),' of variables (i.e. financial data) with `NA` values.\n\n'))
+	df_stocks <- df_stocks %>% filter(symbol %in% stock_symbols_to_keep) # we don't just want to get rid of the individual indexes, but the entire symbol of a stock that has too much missing data, even if the missing data is just for a single year.
 
 	df_stocks <- df_stocks %>%
 		mutate(GrossProfit = ifelse(is.na(GrossProfit) & !is.na(CostofRevenueTotal), TotalRevenue - CostofRevenueTotal, GrossProfit),
@@ -291,9 +295,9 @@ stock_financials_clean <- function(df_stocks)
 	# filter out strange values and outliers
 	##########
 	stock_indexes_to_remove <- which(df_stocks$TotalRevenue == df_stocks$GrossProfit) # not sure why this is, better to remove.
-	stock_indexes_to_remove <- c(stock_indexes_to_remove, which(df_stocks$historical_median_stock_price < 10)) # stock price is too low, probability bad quality.
+	stock_indexes_to_remove <- c(stock_indexes_to_remove, which(df_stocks$historical_median_stock_price < 5)) # stock price is too low, probability bad quality.
 	stock_indexes_to_remove <- c(stock_indexes_to_remove, which(df_stocks$TotalRevenue > 500000)) # Revenue must be below 500B, there aren't many if any companies that have higher Revenue than that, but yet I see strange numbers, and when I look up ticker, it doesn't match
-	stock_indexes_to_remove <- c(stock_indexes_to_remove, which(df_stocks$TotalRevenue < 1000))
+	stock_indexes_to_remove <- c(stock_indexes_to_remove, which(df_stocks$TotalRevenue < 100)) # remove companies with less than 100 million in revenue
 	stock_indexes_to_remove <- c(stock_indexes_to_remove, which(df_stocks$CostofRevenueTotal < 0)) # reported as positive number, so not sure what negative would mean this is <0.1% of data
 	stock_indexes_to_remove <- c(stock_indexes_to_remove, which(df_stocks$GrossProfit < 0)) # bad data + don't want to consider company's that have negative gross profit anyway.
 	stock_indexes_to_remove <- c(stock_indexes_to_remove, which(df_stocks$SellingGeneralAdminExpensesTotal > 500000))
@@ -302,7 +306,9 @@ stock_financials_clean <- function(df_stocks)
 	stock_indexes_to_remove <- c(stock_indexes_to_remove, which((df_stocks$NetIncome / df_stocks$TotalRevenue) < 0))
 
 	stock_indexes_to_remove <- unique(stock_indexes_to_remove)
-	stock_symbols_to_remove <- unique(df_stocks[stock_indexes_to_remove, ]$symbol)
+	stock_symbols_to_remove <- unique(df_stocks[stock_indexes_to_remove, ]$symbol) # we don't just want to get rid of the individual indexes, but the entire symbol of a stock that has too much missing data, even if the missing data is just for a single year.
+	total_number_of_stocks <- length(unique(df_stocks$symbol))
+	cat(paste0('Removing `', length(stock_symbols_to_remove), '` symbols (out of `', total_number_of_stocks,'`, or ', percent(length(stock_symbols_to_remove) / total_number_of_stocks),") that have 'odd' data and/or stocks that I'm not likely to invest in anyway (e.g. less than $5 historical median stock price)\n\n"))
 	df_stocks <- df_stocks %>% filter(!(symbol %in% stock_symbols_to_remove))
 
 	if(sum(is.na(df_stocks$perc_change_stock_1year)) > 0)
@@ -313,17 +319,45 @@ stock_financials_clean <- function(df_stocks)
 	# # Set all columns to zero that have `NA` (which is why we check before to ensure `perc_change_stock_1year` doesn't have any `NA` values)
 	# now we should have all complete cases (need to check before we return `perc_change_stock_1year` cached numbers, which will contain NAs)
 	# ##########
-	df_stocks[is.na(df_stocks)] <- 0
-	complete_cases <- complete.cases(df_stocks)
+	
+    # missing R&D costs will be assumed to be $0
+	df_stocks[is.na(df_stocks$ResearchDevelopment), ]$ResearchDevelopment <- 0
+
+	# stop('FIX THIS... SEE HOW MANY NAs SEE IF WE CAN USE KNN IMPUTE ETC.')
+# perhaps the fields that are missing arent even used in the models
+	
+	percent_nas_per_column <- map_dbl(1:length(colnames(df_stocks)), ~ round(sum(apply(df_stocks[ ,.], 1, function(c) sum(is.na(c))))/nrow(df_stocks),3))
+	column_indexes_to_remove <- which(percent_nas_per_column >= 0.20)
+	total_number_of_columns <- ncol(df_stocks)
+	columns_to_remove <- colnames(df_stocks)[column_indexes_to_remove]
+	df_stocks <- df_stocks[, -column_indexes_to_remove]
+	cat('Removing variables that have mostly have >= 20% data missing:\n\n')
+	cat(paste('>', paste(columns_to_remove, collapse = ', ')))
+	
+	if(sum(is.na(df_stocks$perc_change_stock_1year)) + sum(is.na(df_stocks$diff_above_index_1year)) > 0)
+	{
+	    stop('`perc_change_stock_1year` or `diff_above_index_1year` have NAs')
+	}
+
+	cat('\n\n> Using KNN Imputation to fill missing values for remaining data.\n\n')
+
+	numeric_data <- df_stocks %>% select(-date, -symbol, -period_type)
+	imputed_numeric_data <- knnImputation(as.matrix(numeric_data))
+
+	df_stocks_imputed <- cbind(df_stocks %>% select(date, symbol), imputed_numeric_data)
+	summary(df_stocks)
+	summary(df_stocks_imputed)
+
+	complete_cases <- complete.cases(df_stocks_imputed)
 	
 	if(any(!complete_cases))
 	{
 		stop('rows without with NAs found')
 	}
 
-	df_stocks <- df_stocks %>% select(-period_type, -acwi_close_moving_avg, -perc_change_acwi_1year, -stock_close_moving_avg, -historical_median_stock_price)
+	df_stocks_final <- df_stocks_imputed %>% select(-acwi_close_moving_avg, -perc_change_acwi_1year, -stock_close_moving_avg, -historical_median_stock_price)
 
-	return (df_stocks)
+	return (df_stocks_final)
 }
 
 #######################################################################################################################################
@@ -350,7 +384,7 @@ stock_financials_ratios <- function(df_stocks)
 								cs_income_from_operations = OperatingIncome / TotalRevenue,
 								cs_net_income = NetIncome / TotalRevenue,
 								#cs_earnings_per_share = DilutedNormalizedEPS / TotalRevenue,
-								cs_dividends_paid_out = TotalCashDividendsPaid / TotalRevenue,
+								#cs_dividends_paid_out = TotalCashDividendsPaid / TotalRevenue,
 								cs_shareholders_equity = 1 - cs_total_liabilities_debt,
 								cs_cash_flow_from_operatons = CashfromOperatingActivities / TotalRevenue,
 								cs_capital_expenditures = CapitalExpenditures / TotalRevenue,
@@ -362,14 +396,14 @@ stock_financials_ratios <- function(df_stocks)
 								ratios_cash_flow_to_total_debt = CashfromOperatingActivities / TotalLiabilities,
 								ratios_debt_to_equity = TotalLiabilities / TotalEquity,
 								ratios_equity_multiplier = TotalAssets / TotalEquity,
-								free_cash_flow = CashfromOperatingActivities - CapitalExpenditures - TotalCashDividendsPaid,
+								#free_cash_flow = CashfromOperatingActivities - CapitalExpenditures - TotalCashDividendsPaid,
 								ratios_intangible_assets = IntangiblesNet / TotalAssets,
 								ratios_rd_as_perc_revenue = ResearchDevelopment / TotalRevenue,
 								ratios_gross_profit_margin = GrossProfit / TotalRevenue,
 								ratios_operating_profit_margin = OperatingIncome / TotalRevenue,
 								ratios_net_profit_margin = NetIncome / TotalRevenue,
-								ratios_dividend_payout_ratio = TotalCashDividendsPaid / NetIncome,
-								ratios_retention_rate = 1 - ratios_dividend_payout_ratio,
+								#ratios_dividend_payout_ratio = TotalCashDividendsPaid / NetIncome,
+								#ratios_retention_rate = 1 - ratios_dividend_payout_ratio,
 								ratios_income_to_assets = NetIncome / TotalAssets, # this is essentiall ROA, but i'm not getting average assets over last two years, just using this years assets, so I don't want to call it ROA
 								ratios_income_to_equity = NetIncome / TotalEquity, # this is essentiall ROE, but i'm not getting average equity over last two years, just using this years equity, so I don't want to call it ROE
 								ratioh_current_ratio = ratios_current_ratio >= 1.3,
@@ -404,7 +438,7 @@ build_stock_trend_dataset <- function(df_stocks_full, unique_cleaned_stocks)
 		# The latest financial statement included in this group will already have the 35 stocks already have the perc_change_stock_1year field set from the `download_save_data` function. So by defition, this field will be our target variable (i.e. we want to predict, based on past 3 years, whether or not (or by how much) the stock will beat (or not) the comparison index)
 		# NOTE we want to keep a couple of variables/columns that are absolue (like TotalRevenue, because it could turn out that larger companies tend to outputform index, for example, so we don't want to rely exclusively on trends)
 		column_names <- colnames(df_stocks_sub)
-		starter_columns <- c('date', 'symbol', 'TotalRevenue', 'perc_change_stock_1year', 'net_profit_margin_next_year', 'diff_above_index_1year')
+		starter_columns <- c('date', 'symbol', 'TotalRevenue', 'perc_change_stock_1year', 'diff_above_index_1year')
 		df_trend <- df_stocks_sub[1, starter_columns] # first element is latest
 		column_names <- column_names[! (column_names %in% c(starter_columns))]
 		walk(column_names, ~{
