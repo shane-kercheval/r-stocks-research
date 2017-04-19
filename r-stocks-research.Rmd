@@ -436,27 +436,27 @@ ggplot(data = df_stocks_full, aes(net_profit_margin)) +
 
 ```{r}
 stocks_common_size_perc_change <- df_stocks_full %>% dplyr::select(perc_change_stock_1year, dplyr::contains('cs_'))
-saveRDS(stocks_common_size_perc_change, file = 'stocks_common_size_perc_change.RDS')
+saveRDS(stocks_common_size_perc_change, file = './data/stocks_common_size_perc_change.RDS')
 stocks_common_size_diff_above_index <- df_stocks_full %>% dplyr::select(diff_above_index_1year, dplyr::contains('cs_'))
-saveRDS(stocks_common_size_diff_above_index, file = 'stocks_common_size_diff_above_index.RDS')
+saveRDS(stocks_common_size_diff_above_index, file = './data/stocks_common_size_diff_above_index.RDS')
 
 stocks_ratios_perc_change <- df_stocks_full %>% dplyr::select(perc_change_stock_1year, dplyr::contains('ratios_'), dplyr::contains('ratioh_'))
-saveRDS(stocks_ratios_perc_change, file = 'stocks_ratios_perc_change.RDS')
+saveRDS(stocks_ratios_perc_change, file = './data/stocks_ratios_perc_change.RDS')
 stocks_ratios_diff_above_index <- df_stocks_full %>% dplyr::select(diff_above_index_1year, dplyr::contains('ratios_'), dplyr::contains('ratioh_'))
-saveRDS(stocks_ratios_diff_above_index, file = 'stocks_ratios_diff_above_index.RDS')
+saveRDS(stocks_ratios_diff_above_index, file = './data/stocks_ratios_diff_above_index.RDS')
 
 stocks_top_variables_perc_change <- df_stocks_full[, c('perc_change_stock_1year', df_top_variables$variables)]
-saveRDS(stocks_top_variables_perc_change, file = 'stocks_top_variables_perc_change.RDS')
+saveRDS(stocks_top_variables_perc_change, file = './data/stocks_top_variables_perc_change.RDS')
 stocks_top_variables_diff_above_index <- df_stocks_full[, c('diff_above_index_1year', df_top_variables$variables)]
-saveRDS(stocks_top_variables_diff_above_index, file = 'stocks_top_variables_diff_above_index.RDS')
+saveRDS(stocks_top_variables_diff_above_index, file = './data/stocks_top_variables_diff_above_index.RDS')
 
 stocks_all_perc_change <- df_stocks_full %>% dplyr::select(-date, -symbol, -diff_above_index_1year)
-saveRDS(stocks_all_perc_change, file = 'stocks_all_perc_change.RDS')
+saveRDS(stocks_all_perc_change, file = './data/stocks_all_perc_change.RDS')
 stocks_all_diff_above_index <- df_stocks_full %>% dplyr::select(-date, -symbol, -perc_change_stock_1year)
-saveRDS(stocks_all_diff_above_index, file = 'stocks_all_diff_above_index.RDS')
+saveRDS(stocks_all_diff_above_index, file = './data/stocks_all_diff_above_index.RDS')
 
 stocks_trend_perc_change <- df_stocks_trend %>% dplyr::select(-date, -symbol, -diff_above_index_1year)
-saveRDS(stocks_trend_perc_change, file = 'stocks_trend_perc_change.RDS')
+saveRDS(stocks_trend_perc_change, file = './data/stocks_trend_perc_change.RDS')
 stocks_trend_diff_above_index <- df_stocks_trend %>% dplyr::select(-date, -symbol, -perc_change_stock_1year)
-saveRDS(stocks_trend_diff_above_index, file = 'stocks_trend_diff_above_index.RDS')
+saveRDS(stocks_trend_diff_above_index, file = './data/stocks_trend_diff_above_index.RDS')
 ```
