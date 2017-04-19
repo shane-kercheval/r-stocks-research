@@ -25,7 +25,6 @@ library(fpc)
 library(RColorBrewer)
 library(reshape2)
 
-
 opts_chunk$set(out.width='750px', dpi=200)
 
 cluster_heatmap <- function(results_df, start_stop=2)
@@ -51,17 +50,6 @@ if(pull_data)
     clean_cache()
 }
 ```
-
-# Purpose
-
-> The main goal of this project is to work through a real-world example of **gathering**, **cleaning**, and **exploring** data, and using that data along with **machine learning** techniques to predict stock price gains and losses.
-> 
-> And more specifically, to compare those gains/losses against the market as a whole, in order to see if we can consistently beat the market with a portfolio of select stocks, based primarily on the quarterly or annual `financial information` of those stocks.
-
-- secondary goals include:
-	- having a *custom* sample project to implement new data analysis and machine learning techniques that I've learned.
-		- a financial/stock project seemed reasonable since it would contain data that I can use for basic data analysis, prediction, and time series.
-		- **consequently, this project may contain sections where a particular analysis technique is redundant given previous data analysis techniques already applied in the project, but is included for my own learning purposes.**
 
 # Preparing Stock Symbol Information
 
@@ -91,10 +79,17 @@ all_symbols <- sort(unique(str_trim(all_symbols))) # just in case we have duplci
 #######################################################################################################################################
 # the index we will be comparing against (and trying to beat) is the iShares MSCI ACWI (ACWI) https://finance.yahoo.com/quote/ACWI?p=ACWI
 #######################################################################################################################################
-acwi_closing <- get_prices('ACWI') #quarterly_mean = mean(acwi_closing$perc_change_90, na.rm = TRUE) # our mean is slightly thrown off since we add in additional numbers for weekends/holidays #yearly_return = (1+quarterly_mean)^4 - 1
+if(pull_data)
+{
+    acwi_closing <- get_prices('ACWI') #quarterly_mean = mean(acwi_closing$perc_change_90, na.rm = TRUE) # our mean is slightly thrown off since we add in additional numbers for weekends/holidays #yearly_return = (1+quarterly_mean)^4 - 1
+    saveRDS(acwi_closing, file = 'acwi_closing.RDS')
+}else
+{
+    acwi_closing <- readRDS(file = 'acwi_closing.RDS')
+}
 ```
 
-## Stock Symbol Datasets
+# Stock Symbol Datasets
 
 These stock symbols will be used to download the financials using `quantmod`.
 
@@ -441,154 +436,27 @@ ggplot(data = df_stocks_full, aes(net_profit_margin)) +
 
 ```{r}
 stocks_common_size_perc_change <- df_stocks_full %>% dplyr::select(perc_change_stock_1year, dplyr::contains('cs_'))
+saveRDS(stocks_common_size_perc_change, file = 'stocks_common_size_perc_change.RDS')
 stocks_common_size_diff_above_index <- df_stocks_full %>% dplyr::select(diff_above_index_1year, dplyr::contains('cs_'))
+saveRDS(stocks_common_size_diff_above_index, file = 'stocks_common_size_diff_above_index.RDS')
 
 stocks_ratios_perc_change <- df_stocks_full %>% dplyr::select(perc_change_stock_1year, dplyr::contains('ratios_'), dplyr::contains('ratioh_'))
+saveRDS(stocks_ratios_perc_change, file = 'stocks_ratios_perc_change.RDS')
 stocks_ratios_diff_above_index <- df_stocks_full %>% dplyr::select(diff_above_index_1year, dplyr::contains('ratios_'), dplyr::contains('ratioh_'))
+saveRDS(stocks_ratios_diff_above_index, file = 'stocks_ratios_diff_above_index.RDS')
 
 stocks_top_variables_perc_change <- df_stocks_full[, c('perc_change_stock_1year', df_top_variables$variables)]
+saveRDS(stocks_top_variables_perc_change, file = 'stocks_top_variables_perc_change.RDS')
 stocks_top_variables_diff_above_index <- df_stocks_full[, c('diff_above_index_1year', df_top_variables$variables)]
+saveRDS(stocks_top_variables_diff_above_index, file = 'stocks_top_variables_diff_above_index.RDS')
 
 stocks_all_perc_change <- df_stocks_full %>% dplyr::select(-date, -symbol, -diff_above_index_1year)
+saveRDS(stocks_all_perc_change, file = 'stocks_all_perc_change.RDS')
 stocks_all_diff_above_index <- df_stocks_full %>% dplyr::select(-date, -symbol, -perc_change_stock_1year)
+saveRDS(stocks_all_diff_above_index, file = 'stocks_all_diff_above_index.RDS')
 
 stocks_trend_perc_change <- df_stocks_trend %>% dplyr::select(-date, -symbol, -diff_above_index_1year)
+saveRDS(stocks_trend_perc_change, file = 'stocks_trend_perc_change.RDS')
 stocks_trend_diff_above_index <- df_stocks_trend %>% dplyr::select(-date, -symbol, -perc_change_stock_1year)
-
-df_stocks_datasets <- list(stocks_common_size_perc_change, stocks_common_size_diff_above_index, stocks_ratios_perc_change,
-	stocks_ratios_diff_above_index, stocks_top_variables_perc_change, stocks_top_variables_diff_above_index, stocks_all_perc_change,
-	stocks_all_diff_above_index)
+saveRDS(stocks_trend_diff_above_index, file = 'stocks_trend_diff_above_index.RDS')
 ```
-
-# Spot Check
-
-- Based on http://machinelearningmastery.com/evaluate-machine-learning-algorithms-with-r/
-- Remove `Low variance columns` (based on https://campus.datacamp.com/courses/machine-learning-toolbox/preprocessing-your-data?ex=13):
-
-```{r spot_check, eval=FALSE, message=FALSE, warning=FALSE, include=FALSE}
-seed <- 123
-
-asdf <- map(df_stocks_datasets, ~ {
-	spot_check_dataset <- .
-	if('perc_change_stock_1year' %in% colnames(spot_check_dataset))
-	{
-		spot_check_dataset <- spot_check_dataset %>% rename(target_variable = perc_change_stock_1year)
-	}
-	if('diff_above_index_1year' %in% colnames(spot_check_dataset))
-	{
-		spot_check_dataset <- spot_check_dataset %>% rename(target_variable = diff_above_index_1year)
-	}
-	
-	remove_cols <- nearZeroVar(spot_check_dataset, names = TRUE, freqCut = 2, uniqueCut = 20)
-
-	# we have to make sure they are fit on exactly the same test sets in training and cross validation so we are sure we are making an apples-to-apples comparison
-	set.seed(seed)
-	spot_check_folds <- createFolds(spot_check_dataset$target_variable, k = 5) # maintains the `churn` ratio
-
-	control <- trainControl(
-
-		summaryFunction = twoClassSummary,
-		classProbs = TRUE, # IMPORTANT!
-		verboseIter = FALSE,
-		savePredictions = TRUE,
-		index = spot_check_folds) # this ensures using the same fold for cross validation for each ML algorithm
-
-	metric <- 'ROC'
-
-	linear_pre_proccess <- c('knnImpute', 'nzv', 'center', 'scale') # `nzv` removes nearly constant columns
-	impute_pre_process <- c('knnImpute', 'nzv')
-
-	# Linear Regression
-	set.seed(seed)
-	fit.lm <- train(target_variable ~ . , data = spot_check_dataset, method = 'lm', metric=metric, preProc=linear_pre_proccess, trControl=control)
-	# Neural Network - continuous/regression
-	set.seed(seed)
-	fit.neuralnet <- train(target_variable ~ ., data=spot_check_dataset, method='neuralnet', metric=metric, preProc=impute_pre_process, trControl=control)
-	# Linear Discriminant Analysis
-	set.seed(seed)
-	fit.lda <- train(target_variable ~ ., data=spot_check_dataset, method='lda', metric=metric, preProc=linear_pre_proccess, trControl=control)
-	# Logistic Regression
-	set.seed(seed)
-	fit.glm <- train(target_variable ~ ., data=spot_check_dataset, method='glm', metric=metric, preProc=linear_pre_proccess, trControl=control)
-	#GLMNET
-	set.seed(seed)
-	fit.glmnet <- train(target_variable ~ ., data=spot_check_dataset, method='glmnet', metric=metric, preProc=linear_pre_proccess, trControl=control)
-	# SVM Radial
-	set.seed(seed)
-	fit.svmRadial <- train(target_variable ~ ., data=spot_check_dataset, method='svmRadial', metric=metric, preProc=linear_pre_proccess, trControl=control, fit=FALSE)
-	# kNN
-	set.seed(seed)
-	fit.knn <- train(target_variable ~ ., data=spot_check_dataset, method='knn', metric=metric, preProc=linear_pre_proccess, trControl=control)
-	# Naive Bayes
-	set.seed(seed)
-	fit.nb <- train(target_variable ~ ., data=spot_check_dataset, method='nb', metric=metric, preProc=impute_pre_process, trControl=control)
-	# CART
-	set.seed(seed)
-	fit.cart <- train(target_variable ~ ., data=spot_check_dataset, method='rpart', metric=metric, preProc=impute_pre_process, trControl=control)
-	# C5.0
-	set.seed(seed)
-	fit.c50 <- train(target_variable ~ ., data=spot_check_dataset, method='C5.0', metric=metric, preProc=impute_pre_process, trControl=control)
-	# Bagged CART
-	set.seed(seed)
-	fit.treebag <- train(target_variable ~ ., data=spot_check_dataset, method='treebag', metric=metric, preProc=impute_pre_process, trControl=control)
-	# Random Forest
-	set.seed(seed)
-	fit.rf <- train(target_variable ~ ., data=spot_check_dataset, method='rf', metric=metric, preProc=impute_pre_process, trControl=control)
-	# Stochastic Gradient Boosting (Generalized Boosted Modeling)
-	set.seed(seed)
-	fit.gbm <- train(target_variable ~ ., data=spot_check_dataset, method='gbm', metric=metric, preProc=impute_pre_process, trControl=control, verbose=FALSE)
-
-	return (list(
-		lda = fit.lda, 
-		logistic = fit.glm, 
-		glmnet = fit.glmnet, 
-		svm = fit.svmRadial, 
-		knn = fit.knn, 
-		nb = fit.nb,
-		cart = fit.cart, 
-		c50 = fit.c50, 
-		bagging = fit.treebag, 
-		rf = fit.rf, 
-		gbm = fit.gbm))
-
-})
-
-NEED TO FLATTEN THIS LIST OR SOMETHING
-resamples <- resamples(asdf)
-
-# Table comparison
-(resamples_summary <- summary(resamples))
-
-# boxplot comparison
-bwplot(resamples, scales = list(relation = 'free'), 
-	   xlim = list( c( 	min(resamples_summary$statistics$ROC[,'Min.']), 
-						max(resamples_summary$statistics$ROC[,'Max.'])), 
-					c( 	min(resamples_summary$statistics$Sens[,'Min.']), 
-						max(resamples_summary$statistics$Sens[,'Max.'])), 
-					c( 	min(resamples_summary$statistics$Spec[,'Min.']), 
-						max(resamples_summary$statistics$Spec[,'Max.']))))
-bwplot(resamples, metric = 'ROC')
-dotplot(resamples, metric = 'ROC')
-densityplot(resamples, metric = 'ROC')
-xyplot(resamples, metric = 'ROC')
-```
-
-- we want to pick the model with the highest average AUC across all ten folds, but we also want a model with a lower standard deviation in AUC 
-
-
-# Regression
-
-
-
----------------------------------------------------------------------------------------------------------------------------------------
-
-# Assumptions, Considerations, and Notes
-
-- `Consideration`: remove socks with median stock price < $5
-- `Consideration`: the analysis considers the price the day of the financials release, but most likely i won't invest immmediately after financial reporting, so if I do detect a predictable increase, i need to verify that the morjity of increase does not come within days of finnacial release, because that would mean any investment I made would have 'missed the boat'
-- `FUTURE FIX`: The `moving average` fields for closing prices are calculated after adding weekend/holiday dates and closing prices, wihch are filled with the previous day's closing price (in the `add_perc_info` function). So Friday's closing prices, for example, will be weighted more heavily since Sat and Sun will have the same price. I can't easily calculate moving prices before I fill weekend values because I need weekend values to create consistent/precise year lag (and lag value also has a moving average).
-- `FUTURE FIX`: when filtering, perhaps we don't just want to remove individual rows if the row contains invalid data, but perhaps we want to remove all rows for the same stock (chances are this isn't a big deal, because from what I can see, if one year is missing data, all years for that same stock are missing the same amount of data.)
-- `Improvement` - build and incorporate news/social media (e.g. twitter) sentiment and text analysis: https://www.wunderlist.com/#/tasks/2316044556
-- `Consideration`: model was built with data from non-recession timeframe.
-
-

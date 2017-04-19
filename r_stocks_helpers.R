@@ -292,7 +292,7 @@ stock_financials_clean <- function(df_stocks, missing_data_threshold = 0.125)
 			CostofRevenueTotal = ifelse(is.na(CostofRevenueTotal) & !is.na(GrossProfit), TotalRevenue - GrossProfit, CostofRevenueTotal))
 
 	##########
-	# filter out strange values and outliers
+	# filter out strange values and outliers (i.e. these particular outliers are almost all assocaited with 'stocks' that aren't really stocks and are at least not what I want to be predicting on) (e.g. hedge, mutual funds, etc.)
 	##########
 	stock_indexes_to_remove <- which(df_stocks$TotalRevenue == df_stocks$GrossProfit) # not sure why this is, better to remove.
 	stock_indexes_to_remove <- c(stock_indexes_to_remove, which(df_stocks$historical_median_stock_price < 5)) # stock price is too low, probability bad quality.

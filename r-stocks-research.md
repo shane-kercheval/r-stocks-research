@@ -1,6 +1,5 @@
--   [Purpose](#purpose)
 -   [Preparing Stock Symbol Information](#preparing-stock-symbol-information)
-    -   [Stock Symbol Datasets](#stock-symbol-datasets)
+-   [Stock Symbol Datasets](#stock-symbol-datasets)
     -   [All Country World Index (ACWI) Closing Prices](#all-country-world-index-acwi-closing-prices)
 -   [Downloading & Cleaning Stock Financial Data via `quantmod`](#downloading-cleaning-stock-financial-data-via-quantmod)
     -   [Check Data Integrity](#check-data-integrity)
@@ -15,21 +14,6 @@
 -   [Clustering](#clustering)
 -   [Sandbox / TODO](#sandbox-todo)
 -   [Datasets](#datasets)
--   [Spot Check](#spot-check)
--   [Regression](#regression)
--   [Assumptions, Considerations, and Notes](#assumptions-considerations-and-notes)
-
-Purpose
-=======
-
-> The main goal of this project is to work through a real-world example of **gathering**, **cleaning**, and **exploring** data, and using that data along with **machine learning** techniques to predict stock price gains and losses.
->
-> And more specifically, to compare those gains/losses against the market as a whole, in order to see if we can consistently beat the market with a portfolio of select stocks, based primarily on the quarterly or annual `financial information` of those stocks.
-
--   secondary goals include:
-    -   having a *custom* sample project to implement new data analysis and machine learning techniques that I've learned.
-        -   a financial/stock project seemed reasonable since it would contain data that I can use for basic data analysis, prediction, and time series.
-        -   **consequently, this project may contain sections where a particular analysis technique is redundant given previous data analysis techniques already applied in the project, but is included for my own learning purposes.**
 
 Preparing Stock Symbol Information
 ==================================
@@ -38,7 +22,7 @@ Preparing Stock Symbol Information
 -   stock information downloaded using [quantmod](https://cran.r-project.org/web/packages/quantmod/quantmod.pdf)
 
 Stock Symbol Datasets
----------------------
+=====================
 
 These stock symbols will be used to download the financials using `quantmod`.
 
@@ -103,12 +87,12 @@ head(acwi_closing)
     ## # A tibble: 6 × 6
     ##         date close close_lag_year close_moving_ave close_lag_year_moving_ave perc_change_1year
     ##       <date> <dbl>          <dbl>            <dbl>                     <dbl>             <dbl>
-    ## 1 2017-02-28 62.42             NA          61.4372                        NA                NA
-    ## 2 2017-02-27 62.63             NA          61.3936                        NA                NA
-    ## 3 2017-02-26 62.58             NA          61.3486                        NA                NA
-    ## 4 2017-02-25 62.58             NA          61.3046                        NA                NA
-    ## 5 2017-02-24 62.58             NA          61.2606                        NA                NA
-    ## 6 2017-02-23 62.74             NA          61.2164                        NA                NA
+    ## 1 2017-04-18 62.77             NA          63.0280                        NA                NA
+    ## 2 2017-04-17 63.08             NA          63.0252                        NA                NA
+    ## 3 2017-04-16 62.59             NA          63.0152                        NA                NA
+    ## 4 2017-04-15 62.59             NA          63.0150                        NA                NA
+    ## 5 2017-04-14 62.59             NA          63.0148                        NA                NA
+    ## 6 2017-04-13 62.59             NA          63.0178                        NA                NA
 
 ``` r
 tail(acwi_closing)
@@ -868,44 +852,27 @@ Datasets
 
 ``` r
 stocks_common_size_perc_change <- df_stocks_full %>% dplyr::select(perc_change_stock_1year, dplyr::contains('cs_'))
+saveRDS(stocks_common_size_perc_change, file = 'stocks_common_size_perc_change.RDS')
 stocks_common_size_diff_above_index <- df_stocks_full %>% dplyr::select(diff_above_index_1year, dplyr::contains('cs_'))
+saveRDS(stocks_common_size_diff_above_index, file = 'stocks_common_size_diff_above_index.RDS')
 
 stocks_ratios_perc_change <- df_stocks_full %>% dplyr::select(perc_change_stock_1year, dplyr::contains('ratios_'), dplyr::contains('ratioh_'))
+saveRDS(stocks_ratios_perc_change, file = 'stocks_ratios_perc_change.RDS')
 stocks_ratios_diff_above_index <- df_stocks_full %>% dplyr::select(diff_above_index_1year, dplyr::contains('ratios_'), dplyr::contains('ratioh_'))
+saveRDS(stocks_ratios_diff_above_index, file = 'stocks_ratios_diff_above_index.RDS')
 
 stocks_top_variables_perc_change <- df_stocks_full[, c('perc_change_stock_1year', df_top_variables$variables)]
+saveRDS(stocks_top_variables_perc_change, file = 'stocks_top_variables_perc_change.RDS')
 stocks_top_variables_diff_above_index <- df_stocks_full[, c('diff_above_index_1year', df_top_variables$variables)]
+saveRDS(stocks_top_variables_diff_above_index, file = 'stocks_top_variables_diff_above_index.RDS')
 
 stocks_all_perc_change <- df_stocks_full %>% dplyr::select(-date, -symbol, -diff_above_index_1year)
+saveRDS(stocks_all_perc_change, file = 'stocks_all_perc_change.RDS')
 stocks_all_diff_above_index <- df_stocks_full %>% dplyr::select(-date, -symbol, -perc_change_stock_1year)
+saveRDS(stocks_all_diff_above_index, file = 'stocks_all_diff_above_index.RDS')
 
 stocks_trend_perc_change <- df_stocks_trend %>% dplyr::select(-date, -symbol, -diff_above_index_1year)
+saveRDS(stocks_trend_perc_change, file = 'stocks_trend_perc_change.RDS')
 stocks_trend_diff_above_index <- df_stocks_trend %>% dplyr::select(-date, -symbol, -perc_change_stock_1year)
-
-df_stocks_datasets <- list(stocks_common_size_perc_change, stocks_common_size_diff_above_index, stocks_ratios_perc_change,
-    stocks_ratios_diff_above_index, stocks_top_variables_perc_change, stocks_top_variables_diff_above_index, stocks_all_perc_change,
-    stocks_all_diff_above_index)
+saveRDS(stocks_trend_diff_above_index, file = 'stocks_trend_diff_above_index.RDS')
 ```
-
-Spot Check
-==========
-
--   Based on <http://machinelearningmastery.com/evaluate-machine-learning-algorithms-with-r/>
--   Remove `Low variance columns` (based on <https://campus.datacamp.com/courses/machine-learning-toolbox/preprocessing-your-data?ex=13>):
-
--   we want to pick the model with the highest average AUC across all ten folds, but we also want a model with a lower standard deviation in AUC
-
-Regression
-==========
-
-------------------------------------------------------------------------
-
-Assumptions, Considerations, and Notes
-======================================
-
--   `Consideration`: remove socks with median stock price &lt; $5
--   `Consideration`: the analysis considers the price the day of the financials release, but most likely i won't invest immmediately after financial reporting, so if I do detect a predictable increase, i need to verify that the morjity of increase does not come within days of finnacial release, because that would mean any investment I made would have 'missed the boat'
--   `FUTURE FIX`: The `moving average` fields for closing prices are calculated after adding weekend/holiday dates and closing prices, wihch are filled with the previous day's closing price (in the `add_perc_info` function). So Friday's closing prices, for example, will be weighted more heavily since Sat and Sun will have the same price. I can't easily calculate moving prices before I fill weekend values because I need weekend values to create consistent/precise year lag (and lag value also has a moving average).
--   `FUTURE FIX`: when filtering, perhaps we don't just want to remove individual rows if the row contains invalid data, but perhaps we want to remove all rows for the same stock (chances are this isn't a big deal, because from what I can see, if one year is missing data, all years for that same stock are missing the same amount of data.)
--   `Improvement` - build and incorporate news/social media (e.g. twitter) sentiment and text analysis: <https://www.wunderlist.com/#/tasks/2316044556>
--   `Consideration`: model was built with data from non-recession timeframe.
