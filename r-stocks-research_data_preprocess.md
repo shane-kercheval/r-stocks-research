@@ -605,7 +605,7 @@ Correlation, Maximal Information Coefficient
 
 > Overall, the low/negative correlations suggests that my original plan of using a form of linear regression will probably not result in any significant results.
 
-<img src="r-stocks-research_files/figure-markdown_github/maximal_information_coefficient-1.png" width="750px" />
+<img src="r-stocks-research_data_preprocess_files/figure-markdown_github/maximal_information_coefficient-1.png" width="750px" />
 
 Looking at Data
 ---------------
@@ -614,13 +614,13 @@ Looking at Data
 
 ### Variables with High MIC
 
-<img src="r-stocks-research_files/figure-markdown_github/mic_graphs-1.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/mic_graphs-2.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/mic_graphs-3.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/mic_graphs-4.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/mic_graphs-5.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/mic_graphs-6.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/mic_graphs-7.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/mic_graphs-8.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/mic_graphs-9.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/mic_graphs-10.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/mic_graphs-11.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/mic_graphs-12.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/mic_graphs-13.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/mic_graphs-14.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/mic_graphs-15.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/mic_graphs-16.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/mic_graphs-17.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/mic_graphs-18.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/mic_graphs-19.png" width="750px" />
+<img src="r-stocks-research_data_preprocess_files/figure-markdown_github/mic_graphs-1.png" width="750px" /><img src="r-stocks-research_data_preprocess_files/figure-markdown_github/mic_graphs-2.png" width="750px" /><img src="r-stocks-research_data_preprocess_files/figure-markdown_github/mic_graphs-3.png" width="750px" /><img src="r-stocks-research_data_preprocess_files/figure-markdown_github/mic_graphs-4.png" width="750px" /><img src="r-stocks-research_data_preprocess_files/figure-markdown_github/mic_graphs-5.png" width="750px" /><img src="r-stocks-research_data_preprocess_files/figure-markdown_github/mic_graphs-6.png" width="750px" /><img src="r-stocks-research_data_preprocess_files/figure-markdown_github/mic_graphs-7.png" width="750px" /><img src="r-stocks-research_data_preprocess_files/figure-markdown_github/mic_graphs-8.png" width="750px" /><img src="r-stocks-research_data_preprocess_files/figure-markdown_github/mic_graphs-9.png" width="750px" /><img src="r-stocks-research_data_preprocess_files/figure-markdown_github/mic_graphs-10.png" width="750px" /><img src="r-stocks-research_data_preprocess_files/figure-markdown_github/mic_graphs-11.png" width="750px" /><img src="r-stocks-research_data_preprocess_files/figure-markdown_github/mic_graphs-12.png" width="750px" /><img src="r-stocks-research_data_preprocess_files/figure-markdown_github/mic_graphs-13.png" width="750px" /><img src="r-stocks-research_data_preprocess_files/figure-markdown_github/mic_graphs-14.png" width="750px" /><img src="r-stocks-research_data_preprocess_files/figure-markdown_github/mic_graphs-15.png" width="750px" /><img src="r-stocks-research_data_preprocess_files/figure-markdown_github/mic_graphs-16.png" width="750px" /><img src="r-stocks-research_data_preprocess_files/figure-markdown_github/mic_graphs-17.png" width="750px" /><img src="r-stocks-research_data_preprocess_files/figure-markdown_github/mic_graphs-18.png" width="750px" /><img src="r-stocks-research_data_preprocess_files/figure-markdown_github/mic_graphs-19.png" width="750px" />
 
 > No clear linear patterns found (visually), which is interesting.
 
 ### Trend Variables
 
-<img src="r-stocks-research_files/figure-markdown_github/trend_graphs-1.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/trend_graphs-2.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/trend_graphs-3.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/trend_graphs-4.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/trend_graphs-5.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/trend_graphs-6.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/trend_graphs-7.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/trend_graphs-8.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/trend_graphs-9.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/trend_graphs-10.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/trend_graphs-11.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/trend_graphs-12.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/trend_graphs-13.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/trend_graphs-14.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/trend_graphs-15.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/trend_graphs-16.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/trend_graphs-17.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/trend_graphs-18.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/trend_graphs-19.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/trend_graphs-20.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/trend_graphs-21.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/trend_graphs-22.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/trend_graphs-23.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/trend_graphs-24.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/trend_graphs-25.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/trend_graphs-26.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/trend_graphs-27.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/trend_graphs-28.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/trend_graphs-29.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/trend_graphs-30.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/trend_graphs-31.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/trend_graphs-32.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/trend_graphs-33.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/trend_graphs-34.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/trend_graphs-35.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/trend_graphs-36.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/trend_graphs-37.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/trend_graphs-38.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/trend_graphs-39.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/trend_graphs-40.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/trend_graphs-41.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/trend_graphs-42.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/trend_graphs-43.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/trend_graphs-44.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/trend_graphs-45.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/trend_graphs-46.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/trend_graphs-47.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/trend_graphs-48.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/trend_graphs-49.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/trend_graphs-50.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/trend_graphs-51.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/trend_graphs-52.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/trend_graphs-53.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/trend_graphs-54.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/trend_graphs-55.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/trend_graphs-56.png" width="750px" /><img src="r-stocks-research_files/figure-markdown_github/trend_graphs-57.png" width="750px" />
+<img src="r-stocks-research_data_preprocess_files/figure-markdown_github/trend_graphs-1.png" width="750px" /><img src="r-stocks-research_data_preprocess_files/figure-markdown_github/trend_graphs-2.png" width="750px" /><img src="r-stocks-research_data_preprocess_files/figure-markdown_github/trend_graphs-3.png" width="750px" /><img src="r-stocks-research_data_preprocess_files/figure-markdown_github/trend_graphs-4.png" width="750px" /><img src="r-stocks-research_data_preprocess_files/figure-markdown_github/trend_graphs-5.png" width="750px" /><img src="r-stocks-research_data_preprocess_files/figure-markdown_github/trend_graphs-6.png" width="750px" /><img src="r-stocks-research_data_preprocess_files/figure-markdown_github/trend_graphs-7.png" width="750px" /><img src="r-stocks-research_data_preprocess_files/figure-markdown_github/trend_graphs-8.png" width="750px" /><img src="r-stocks-research_data_preprocess_files/figure-markdown_github/trend_graphs-9.png" width="750px" /><img src="r-stocks-research_data_preprocess_files/figure-markdown_github/trend_graphs-10.png" width="750px" /><img src="r-stocks-research_data_preprocess_files/figure-markdown_github/trend_graphs-11.png" width="750px" /><img src="r-stocks-research_data_preprocess_files/figure-markdown_github/trend_graphs-12.png" width="750px" /><img src="r-stocks-research_data_preprocess_files/figure-markdown_github/trend_graphs-13.png" width="750px" /><img src="r-stocks-research_data_preprocess_files/figure-markdown_github/trend_graphs-14.png" width="750px" /><img src="r-stocks-research_data_preprocess_files/figure-markdown_github/trend_graphs-15.png" width="750px" /><img src="r-stocks-research_data_preprocess_files/figure-markdown_github/trend_graphs-16.png" width="750px" /><img src="r-stocks-research_data_preprocess_files/figure-markdown_github/trend_graphs-17.png" width="750px" /><img src="r-stocks-research_data_preprocess_files/figure-markdown_github/trend_graphs-18.png" width="750px" /><img src="r-stocks-research_data_preprocess_files/figure-markdown_github/trend_graphs-19.png" width="750px" /><img src="r-stocks-research_data_preprocess_files/figure-markdown_github/trend_graphs-20.png" width="750px" /><img src="r-stocks-research_data_preprocess_files/figure-markdown_github/trend_graphs-21.png" width="750px" /><img src="r-stocks-research_data_preprocess_files/figure-markdown_github/trend_graphs-22.png" width="750px" /><img src="r-stocks-research_data_preprocess_files/figure-markdown_github/trend_graphs-23.png" width="750px" /><img src="r-stocks-research_data_preprocess_files/figure-markdown_github/trend_graphs-24.png" width="750px" /><img src="r-stocks-research_data_preprocess_files/figure-markdown_github/trend_graphs-25.png" width="750px" /><img src="r-stocks-research_data_preprocess_files/figure-markdown_github/trend_graphs-26.png" width="750px" /><img src="r-stocks-research_data_preprocess_files/figure-markdown_github/trend_graphs-27.png" width="750px" /><img src="r-stocks-research_data_preprocess_files/figure-markdown_github/trend_graphs-28.png" width="750px" /><img src="r-stocks-research_data_preprocess_files/figure-markdown_github/trend_graphs-29.png" width="750px" /><img src="r-stocks-research_data_preprocess_files/figure-markdown_github/trend_graphs-30.png" width="750px" /><img src="r-stocks-research_data_preprocess_files/figure-markdown_github/trend_graphs-31.png" width="750px" /><img src="r-stocks-research_data_preprocess_files/figure-markdown_github/trend_graphs-32.png" width="750px" /><img src="r-stocks-research_data_preprocess_files/figure-markdown_github/trend_graphs-33.png" width="750px" /><img src="r-stocks-research_data_preprocess_files/figure-markdown_github/trend_graphs-34.png" width="750px" /><img src="r-stocks-research_data_preprocess_files/figure-markdown_github/trend_graphs-35.png" width="750px" /><img src="r-stocks-research_data_preprocess_files/figure-markdown_github/trend_graphs-36.png" width="750px" /><img src="r-stocks-research_data_preprocess_files/figure-markdown_github/trend_graphs-37.png" width="750px" /><img src="r-stocks-research_data_preprocess_files/figure-markdown_github/trend_graphs-38.png" width="750px" /><img src="r-stocks-research_data_preprocess_files/figure-markdown_github/trend_graphs-39.png" width="750px" /><img src="r-stocks-research_data_preprocess_files/figure-markdown_github/trend_graphs-40.png" width="750px" /><img src="r-stocks-research_data_preprocess_files/figure-markdown_github/trend_graphs-41.png" width="750px" /><img src="r-stocks-research_data_preprocess_files/figure-markdown_github/trend_graphs-42.png" width="750px" /><img src="r-stocks-research_data_preprocess_files/figure-markdown_github/trend_graphs-43.png" width="750px" /><img src="r-stocks-research_data_preprocess_files/figure-markdown_github/trend_graphs-44.png" width="750px" /><img src="r-stocks-research_data_preprocess_files/figure-markdown_github/trend_graphs-45.png" width="750px" /><img src="r-stocks-research_data_preprocess_files/figure-markdown_github/trend_graphs-46.png" width="750px" /><img src="r-stocks-research_data_preprocess_files/figure-markdown_github/trend_graphs-47.png" width="750px" /><img src="r-stocks-research_data_preprocess_files/figure-markdown_github/trend_graphs-48.png" width="750px" /><img src="r-stocks-research_data_preprocess_files/figure-markdown_github/trend_graphs-49.png" width="750px" /><img src="r-stocks-research_data_preprocess_files/figure-markdown_github/trend_graphs-50.png" width="750px" /><img src="r-stocks-research_data_preprocess_files/figure-markdown_github/trend_graphs-51.png" width="750px" /><img src="r-stocks-research_data_preprocess_files/figure-markdown_github/trend_graphs-52.png" width="750px" /><img src="r-stocks-research_data_preprocess_files/figure-markdown_github/trend_graphs-53.png" width="750px" /><img src="r-stocks-research_data_preprocess_files/figure-markdown_github/trend_graphs-54.png" width="750px" /><img src="r-stocks-research_data_preprocess_files/figure-markdown_github/trend_graphs-55.png" width="750px" /><img src="r-stocks-research_data_preprocess_files/figure-markdown_github/trend_graphs-56.png" width="750px" /><img src="r-stocks-research_data_preprocess_files/figure-markdown_github/trend_graphs-57.png" width="750px" />
 
 > No clear linear patterns found (visually), which is interesting.
 
@@ -638,7 +638,7 @@ Clustering
     ## 
     ## > ideal number of clusters: 3
 
-<img src="r-stocks-research_files/figure-markdown_github/segmentation-1.png" width="750px" />
+<img src="r-stocks-research_data_preprocess_files/figure-markdown_github/segmentation-1.png" width="750px" />
 
     ## 
     ## 
@@ -647,7 +647,7 @@ Clustering
     ##        1   1838          0.1191985        0.2998669               0.0435299             0.2729245
     ##        2   2490          0.1915099        0.3832531               0.1148630             0.3530087
 
-<img src="r-stocks-research_files/figure-markdown_github/segmentation-2.png" width="750px" />
+<img src="r-stocks-research_data_preprocess_files/figure-markdown_github/segmentation-2.png" width="750px" />
 
     ## 
     ## 
@@ -657,7 +657,7 @@ Clustering
     ##        2    856          0.1940952        0.3472759               0.1176098             0.3238436
     ##        3   1634          0.1901555        0.4009095               0.1134240             0.3674522
 
-<img src="r-stocks-research_files/figure-markdown_github/segmentation-3.png" width="750px" />
+<img src="r-stocks-research_data_preprocess_files/figure-markdown_github/segmentation-3.png" width="750px" />
 
     ## 
     ## 
@@ -668,7 +668,7 @@ Clustering
     ##        3   1634          0.1901555        0.4009095               0.1134240             0.3674522
     ##        4    529          0.0830249        0.2862965               0.0038628             0.2625090
 
-<img src="r-stocks-research_files/figure-markdown_github/segmentation-4.png" width="750px" />
+<img src="r-stocks-research_data_preprocess_files/figure-markdown_github/segmentation-4.png" width="750px" />
 
     ## 
     ## 
@@ -685,7 +685,7 @@ Clustering
     ## 
     ## > ideal number of clusters: 3
 
-<img src="r-stocks-research_files/figure-markdown_github/segmentation-5.png" width="750px" />
+<img src="r-stocks-research_data_preprocess_files/figure-markdown_github/segmentation-5.png" width="750px" />
 
     ## 
     ## 
@@ -694,7 +694,7 @@ Clustering
     ##        1   4105          0.1665133        0.3567358               0.0902197             0.3275626
     ##        2    223          0.0556469        0.2268840              -0.0194400             0.2067603
 
-<img src="r-stocks-research_files/figure-markdown_github/segmentation-6.png" width="750px" />
+<img src="r-stocks-research_data_preprocess_files/figure-markdown_github/segmentation-6.png" width="750px" />
 
     ## 
     ## 
@@ -704,7 +704,7 @@ Clustering
     ##        2    591          0.7542580        0.3575648               0.6200615             0.3487806
     ##        3    223          0.0556469        0.2268840              -0.0194400             0.2067603
 
-<img src="r-stocks-research_files/figure-markdown_github/segmentation-7.png" width="750px" />
+<img src="r-stocks-research_data_preprocess_files/figure-markdown_github/segmentation-7.png" width="750px" />
 
     ## 
     ## 
@@ -715,7 +715,7 @@ Clustering
     ##        3    591          0.7542580        0.3575648               0.6200615             0.3487806
     ##        4    223          0.0556469        0.2268840              -0.0194400             0.2067603
 
-<img src="r-stocks-research_files/figure-markdown_github/segmentation-8.png" width="750px" />
+<img src="r-stocks-research_data_preprocess_files/figure-markdown_github/segmentation-8.png" width="750px" />
 
     ## 
     ## 
@@ -732,7 +732,7 @@ Clustering
     ## 
     ## > ideal number of clusters: 2
 
-<img src="r-stocks-research_files/figure-markdown_github/segmentation-9.png" width="750px" />
+<img src="r-stocks-research_data_preprocess_files/figure-markdown_github/segmentation-9.png" width="750px" />
 
     ## 
     ## 
@@ -741,7 +741,7 @@ Clustering
     ##        1   1124          0.1052172        0.3057994               0.0686129             0.2955115
     ##        2     31          0.0684146        0.2376395               0.0281372             0.2399665
 
-<img src="r-stocks-research_files/figure-markdown_github/segmentation-10.png" width="750px" />
+<img src="r-stocks-research_data_preprocess_files/figure-markdown_github/segmentation-10.png" width="750px" />
 
     ## 
     ## 
@@ -751,7 +751,7 @@ Clustering
     ##        2   238          0.0808222        0.3029879               0.0417485             0.2973953
     ##        3    31          0.0684146        0.2376395               0.0281372             0.2399665
 
-<img src="r-stocks-research_files/figure-markdown_github/segmentation-11.png" width="750px" />
+<img src="r-stocks-research_data_preprocess_files/figure-markdown_github/segmentation-11.png" width="750px" />
 
     ## 
     ## 
@@ -762,7 +762,7 @@ Clustering
     ##        3    29          0.0483606        0.2943508              -0.0179811             0.2937058
     ##        4    31          0.0684146        0.2376395               0.0281372             0.2399665
 
-<img src="r-stocks-research_files/figure-markdown_github/segmentation-12.png" width="750px" />
+<img src="r-stocks-research_data_preprocess_files/figure-markdown_github/segmentation-12.png" width="750px" />
 
     ## 
     ## 
@@ -786,21 +786,21 @@ ggplot(data = df_stocks_full, mapping = aes(x = DividendsperShareCommonStockPrim
     geom_point(alpha=0.2)
 ```
 
-<img src="r-stocks-research_files/figure-markdown_github/sandbox-1.png" width="750px" />
+<img src="r-stocks-research_data_preprocess_files/figure-markdown_github/sandbox-1.png" width="750px" />
 
 ``` r
 ggplot(data = df_stocks_full, mapping = aes(x = ratios_quick_ratio, y = diff_above_index_1year)) +
     geom_point(alpha=0.2)
 ```
 
-<img src="r-stocks-research_files/figure-markdown_github/sandbox-2.png" width="750px" />
+<img src="r-stocks-research_data_preprocess_files/figure-markdown_github/sandbox-2.png" width="750px" />
 
 ``` r
 ggplot(data = df_stocks_full, mapping = aes(x = TotalRevenue, y = diff_above_index_1year)) +
     geom_point(alpha=0.2)
 ```
 
-<img src="r-stocks-research_files/figure-markdown_github/sandbox-3.png" width="750px" />
+<img src="r-stocks-research_data_preprocess_files/figure-markdown_github/sandbox-3.png" width="750px" />
 
 ``` r
 # makes sense that revenue isn't necessarily correlated with diff_above_index_1year becuase revenue doesn't guarantee success or profit
@@ -809,14 +809,14 @@ ggplot(data = df_stocks_full) +
     geom_hex(mapping = aes(x = TotalRevenue, y = diff_above_index_1year))
 ```
 
-<img src="r-stocks-research_files/figure-markdown_github/sandbox-4.png" width="750px" />
+<img src="r-stocks-research_data_preprocess_files/figure-markdown_github/sandbox-4.png" width="750px" />
 
 ``` r
 ggplot(data = df_stocks_full, aes(diff_above_index_1year)) +
     geom_freqpoly(bins = 15)
 ```
 
-<img src="r-stocks-research_files/figure-markdown_github/sandbox-5.png" width="750px" />
+<img src="r-stocks-research_data_preprocess_files/figure-markdown_github/sandbox-5.png" width="750px" />
 
 ``` r
 # perhaps clustering data will help, since 
@@ -825,7 +825,7 @@ ggplot(data = df_stocks_full, mapping = aes(x = net_profit_margin, y = diff_abov
     geom_point(alpha=0.2)
 ```
 
-<img src="r-stocks-research_files/figure-markdown_github/sandbox-6.png" width="750px" />
+<img src="r-stocks-research_data_preprocess_files/figure-markdown_github/sandbox-6.png" width="750px" />
 
 ``` r
 # makes sense that revenue isn't necessarily correlated with diff_above_index_1year becuase revenue doesn't guarantee success or profit
@@ -834,14 +834,14 @@ ggplot(data = df_stocks_full) +
     geom_hex(mapping = aes(x = net_profit_margin, y = diff_above_index_1year))
 ```
 
-<img src="r-stocks-research_files/figure-markdown_github/sandbox-7.png" width="750px" />
+<img src="r-stocks-research_data_preprocess_files/figure-markdown_github/sandbox-7.png" width="750px" />
 
 ``` r
 ggplot(data = df_stocks_full, aes(net_profit_margin)) +
     geom_freqpoly(bins = 15)
 ```
 
-<img src="r-stocks-research_files/figure-markdown_github/sandbox-8.png" width="750px" />
+<img src="r-stocks-research_data_preprocess_files/figure-markdown_github/sandbox-8.png" width="750px" />
 
 ``` r
 # interesting that net profit margin doesn't appear to have any significance in determining diff_above_index_1year. I would have expected a somewhat linear relationship

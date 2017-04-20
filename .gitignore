@@ -39,3 +39,5 @@ vignettes/*.pdf
 *.Rda
 .RDataTmp
 .Rproj.user
+
+regression_data
